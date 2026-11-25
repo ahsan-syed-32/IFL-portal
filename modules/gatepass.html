@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IFL Gate Pass Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --ink: #17222e;
+  --mute: #5d6b7a;
+  --line: #cdd5de;
+  --paper: #f3f5f8;
+  --card: #ffffff;
+  --brand: #0076c0;
+  --brand-d: #005a94;
+  --ok: #1b7a43;
+  --bad: #b3261e;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 15px/1.45 "Segoe UI", system-ui, sans-serif;
+}
+main {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 16px;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 0 14px;
+}
+header img {
+  width: 52px;
+  height: auto;
+  border-radius: 4px;
+}
+h1 {
+  font-size: 19px;
+  margin: 0;
+  letter-spacing: .2px;
+}
+header p {
+  margin: 0;
+  color: var(--mute);
+  font-size: 13px;
+}
+
+.slip {
+  background: var(--card);
+  border: 1.5px solid var(--ink);
+  padding: 18px;
+  border-radius: 8px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.full { grid-column: 1 / -1; }
+
+label, .lbl {
+  display: block;
+  font-size: 13px;
+  color: var(--mute);
+  margin-bottom: 4px;
+}
+input[type=text], input[type=date], input[type=number], select, textarea {
+  width: 100%;
+  font: inherit;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+}
+input:focus, textarea:focus, select:focus, button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+.seg {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.seg label {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+  padding: 9px 6px;
+  cursor: pointer;
+  color: var(--ink);
+  border-right: 1px solid var(--line);
+  font-size: 14px;
+}
+.seg label:last-child { border: 0; }
+.seg input { position: absolute; opacity: 0; }
+.seg input:checked + span { font-weight: 600; }
+.seg label:has(input:checked) {
+  background: var(--brand);
+  color: #fff;
+}
+.seg small { display: block; font-size: 12px; opacity: .8; }
+
+h2 {
+  font-size: 14px;
+  margin: 22px 0 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.row {
+  display: grid;
+  grid-template-columns: 26px 1fr 78px 34px;
+  gap: 8px;
+  align-items: start;
+  margin-bottom: 8px;
+}
+.row b {
+  padding-top: 9px;
+  color: var(--mute);
+  font-weight: 500;
+  text-align: center;
+}
+.cb { position: relative; }
+.list {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  max-height: 220px;
+  overflow: auto;
+  box-shadow: 0 6px 18px rgba(23,34,46,.14);
+  display: none;
+}
+.list li {
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 13.5px;
+}
+.list li.hi, .list li:hover { background: #e6f2fa; }
+.list li.none { color: var(--mute); cursor: default; }
+
+.x {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 6px;
+  height: 38px;
+  cursor: pointer;
+  color: var(--mute);
+  font-size: 18px;
+}
+.add {
+  border: 1px dashed var(--brand);
+  color: var(--brand);
+  background: #fff;
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font: inherit;
+}
+.add:disabled { opacity: .45; cursor: default; }
+.go {
+  width: 100%;
+  margin-top: 22px;
+  padding: 14px;
+  font: 600 16px inherit;
+  color: #fff;
+  background: var(--brand);
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.go:hover { background: var(--brand-d); }
+.go:disabled { opacity: .6; }
+
+#msg { margin-top: 12px; font-size: 14px; min-height: 20px; }
+#msg.ok { color: var(--ok); }
+#msg.bad { color: var(--bad); }
+
+@media(max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+
+:root[data-theme=dark] {
+  --ink: #e8eef6;
+  --mute: #8fa1b8;
+  --line: #243750;
+  --paper: #0c1522;
+  --card: #142235;
+  --brand: #2dc4bb;
+  --brand-d: #1fa39b;
+  --ok: #2fa36b;
+  --bad: #e06c5c;
+}
+:root[data-theme=dark] input[type=text],
+:root[data-theme=dark] input[type=date],
+:root[data-theme=dark] input[type=number],
+:root[data-theme=dark] select,
+:root[data-theme=dark] textarea,
+:root[data-theme=dark] .x,
+:root[data-theme=dark] .add,
+:root[data-theme=dark] .list {
+  background: #0f1b2d;
+  color: var(--ink);
+  border-color: var(--line);
+}
+:root[data-theme=dark] .list li.hi,
+:root[data-theme=dark] .list li:hover { background: #1e334d; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <img src="https://media.licdn.com/dms/image/v2/D4D0BAQGVfEmQERxvTA/company-logo_200_200/B4DZuu7lvAH4AI-/0/1768166415915/internationalfurniturelimited_logo?e=2147483647&v=beta&t=4vq1pG52h-WG7i_ZB5uNfL0x5AdJYhLXHNiuYxD3jD4" alt="IFL Logo">
+  <div>
+    <h1>Gate Pass Generator</h1>
+    <p>International Furniture Private Limited</p>
+  </div>
+</header>
+
+<div class="slip">
+  <div class="grid">
+    <div class="full">
+      <span class="lbl">Type</span>
+      <div class="seg" id="type">
+        <label><input type="radio" name="type" value="Inward"><span>Inward</span></label>
+        <label><input type="radio" name="type" value="Outward" checked><span>Outward</span></label>
+        <label><input type="radio" name="type" value="Return"><span>Return</span></label>
+      </div>
+    </div>
+    <div>
+      <label for="from">From</label>
+      <input type="text" id="from" value="IFL Office">
+    </div>
+    <div>
+      <label for="to">To (Office Name / Destination)</label>
+      <input type="text" id="to" placeholder="e.g. Gravity Office DHA Phase 1">
+    </div>
+    <div>
+      <label for="date">Date</label>
+      <input type="date" id="date">
+    </div>
+    <div>
+      <span class="lbl">Transport</span>
+      <div class="seg" id="tr">
+        <label><input type="radio" name="tr" value="0" checked><span>Saeed<small>KU0345</small></span></label>
+        <label><input type="radio" name="tr" value="1"><span>Darya Khan<small>N/A</small></span></label>
+      </div>
+    </div>
+    <div class="full">
+      <label for="route">Route / Address</label>
+      <textarea id="route" placeholder="Delivery address"></textarea>
+    </div>
+    <div>
+      <label for="chg">Charges (Optional)</label>
+      <input type="text" id="chg" inputmode="decimal">
+    </div>
+    <div>
+      <label for="authSelect">Authorised Signature</label>
+      <select id="authSelect">
+        <option value="Saud Baig">Saud Baig</option>
+        <option value="Ahsan">Ahsan</option>
+        <option value="Hassan">Hassan</option>
+        <option value="Salman">Salman</option>
+        <option value="Eeman">Eeman</option>
+        <option value="manual">Other (Manual Entry)</option>
+      </select>
+    </div>
+    <div id="manualAuthBox" style="display: none;">
+      <label for="authManual">Enter Authorised Name</label>
+      <input type="text" id="authManual" placeholder="Enter name">
+    </div>
+  </div>
+
+  <h2>Items</h2>
+  <div id="items"></div>
+  <button type="button" class="add" id="addBtn">+ Add Item</button>
+  <button type="button" class="go" id="go">Save and Create PDF</button>
+  <div id="msg" role="status"></div>
+</div>
+</main>
+
+<script>
+const LOGO = "https://media.licdn.com/dms/image/v2/D4D0BAQGVfEmQERxvTA/company-logo_200_200/B4DZuu7lvAH4AI-/0/1768166415915/internationalfurniturelimited_logo?e=2147483647&v=beta&t=4vq1pG52h-WG7i_ZB5uNfL0x5AdJYhLXHNiuYxD3jD4";
+const MAX_ITEMS = 6;
+const TRANS = [{n: "Saeed", v: "KU0345"}, {n: "Darya Khan", v: "N/A"}];
+const $ = s => document.querySelector(s);
+const LS = localStorage;
+const J = (k, d) => { try { return JSON.parse(LS.getItem(k)) ?? d } catch { return d } };
+
+// Full Master Product List from Document
+const MASTER_PRODUCTS = [
+  "Business Center Workstation", "Lecture Hall Metal Frame System with Modesty Panels (Type A)", "Lecture Hall Metal Frame System with Modesty Panels (Type C)",
+  "Lecture Hall Metal Frame System with Modesty Panels (Type D)", "Lecture Hall Metal Frame System with Modesty Panels (Type E)", "Lecture Hall Metal Frame System with Modesty Panels (Type F)",
+  "Lecture Hall Table Tops (Type A)", "Lecture Hall Table Tops (Type B)", "Lecture Hall Table Tops (Type C)", "Lecture Hall Table Tops (Type D)", "Lecture Hall Table Tops (Type E)",
+  "Lecture Hall Table Tops (Type F)", "Student Workstation", "Table Top - Business Center Workstation", "CPVC Brass Socket 1 1/4 x 1 1/4", "CPVC Bush 1 1/4 x 1 1/4",
+  "CPVC ELBOW 1\" STEELEX", "CPVC PIPE 1\" SCH-40 STEELEX", "E-Z SOLUTION 237-ML NEW PACKING", "Easy Chair Parts - Back", "Easy Chair Parts - Metal Base", "MARK CPVC SOCKET 1-1/2\"",
+  "QABIL GAS CLIP 1\"", "River Chair Parts - Seat", "SILICON TUBE 50G (MED)", "SST CPVC B.VALVE 1\"", "TEFLONE TAPE", "UPVC ELBOW 3\" 45* STEELEX", "UPVC PIPE 2\" SCH-40 STEELEX",
+  "UPVC TEE 4\" STEELEX", "Vortex Coffee Table", "(JK-3020A) Executive Table with Side Rack", "(JK-3020D) Executive Table with Side Rack", "1 Seater Sofa - PCIO1",
+  "10 Person Workstation", "10 Person Workstation (Components)", "10 x 12 Electric Distrubution Box", "10115", "1015Y-1-Chair", "10203", "10Person Cluster Workstation Frame System-6000*1180*725",
+  "10Person Cluster Workstation Frame System-9000*1180*725", "11001", "11050", "11LT65-33", "11LT65-J05", "11LT86-34", "11LT86-J03", "11OPS(I5-1130G7 8GB RAM 256GB SSD)", "12003", "12251",
+  "12MM CLEAR TEMPERED COLOUR COATED SAFETY GLASS", "12MM CLEAR TEMPERED SAFETY GLASS", "12P Cluster Metal Frame System (AP-Series)", "12Person Cluster Workstation Frame System-7200*1180*725",
+  "12mm Plain Clear Glass", "12mm Tempered Glass", "13Person Side By Side Workstation Frame System-11700*620*725", "14Person Cluster Workstation Frame System-8400*1180*725",
+  "16Person Cluster Workstation Frame System-7287*1200*725", "16Person Cluster Workstation Frame System-9600*1180*725", "18111Y-1-Chair", "1817Y-Chair", "1835Y-Chair", "1885Y-Bar Stool",
+  "1894Y-Chair", "18Person Cluster Workstation Frame System-10800*1180*725", "19146Y-Bar Stool", "2 Person Workstation- New Project", "2 Seater Bench", "2 Seater Bench (On Wall)",
+  "2 Seater Loose Table", "2 Seater Sofa", "2 Seater Sofa - PCIO1", "2 Seater Table (Fixed)", "2-Seater Receptionist Sofa", "2.5 Seater Sofa - TSLO1", "200A MCCB Himel Electric breaker",
+  "23001-1Y-Chair", "231102Y-Chair", "231103Y-Chair", "231104Y-Chair", "240102Y-Bar Stool", "2Person S2S Workstation Frame System", "2Person Side By Side Workstation Frame System-2380*620*725",
+  "3 Pin Electric Box", "3 Pin Plug Top", "3 Seater Sofa", "3 Seater Sofa - MSSR", "30 x 36 dual door electric distribution box", "38mm PVC , Pasting (2mm)", "3D Hydraulic Hinges",
+  "3Person Side By Side Workstation Frame System-2380*620*725", "3Person Side By Side Workstation Frame System-2950*620*725H", "4 Person Workstation (7'X'4)",
+  "4 Person Workstation (American Cherry, Graphite Wove)", "4 Person Workstation (New Project)", "4 Person Workstation (Russia White Oak, Graphite Wove)", "4 Person Workstation - AHBC",
+  "4 Person Workstation - PCIO2", "4 Person Workstation- New Project", "4 Seater Fixed Table", "4P Cluster Metal Frame System (AP-Series)", "4Person Cluster Workstation Frame System-2380*1180*725",
+  "5mm Clear Glass Tempered", "6 Person Workstation Frame System-3580*1180*725", "725Y-Chair", "763Y-Chair", "773Y-Chair", "774Y-Chair", "775Y-Chair",
+  "7Person Side By Side Workstation Frame System-8400*620*725", "8 Person Workstation", "857Y-Chair", "8Person Cluster Workstation Frame System-4800*1180*725", "8mm Clear Glass",
+  "8mm Clear Glass Tempered", "8mm Plain glass", "9 Seater L Shape Sofa-SAI", "9Person Side By Side Workstation Frame System-7380*620*725", "A22 High Back Chair",
+  "A6003 Chair Metal Frame", "A6015 Chair Metal Frame", "A6045 Chair Metal Frame", "AHP CITA", "AL-Series Manager Table Frame", "AL-Series Workstation Frame", "AM-Series Folding Table",
+  "AP Workstation Metal Frame", "Acama Chair", "Accent - Round Study Table", "Acoustic Panels (8'x4')", "Acoustic Wall 2D", "Acrylic sheet", "Ada Reading Table", "Adjustable Chair Leg Stoppers",
+  "Aero Chair", "Aero Table", "Airva High Back Chair", "Airva Mid Back Chair", "Allure Manager Table", "Alpha Chair", "Aluminium Chair without Arm", "Aluminum Chair with Arm", "Amber Chair",
+  "Andy Chair", "Anita Chair", "Apex Outdoor Chair", "Arc Office Pod", "Arch Table", "Arco chair", "Arden Coffee Table", "Aria Chair", "Arlo Armchair Single Seater- SAI", "Auditorium Chair",
+  "Aura Chair", "Aven Chair", "Avidesk", "Avika Pod", "Axis Table Base", "BD Round Meeting Table", "Bar Stool", "Beetle Chair", "Belie Chair", "Bell Coffee Table", "Bench 48\"X15\"",
+  "Block Sofa", "BPO Chair Sample", "Breakout Space Round Table DIA1200mm", "Butterfly Chair", "CEO Cabinet", "CEO Chair", "CEO Table", "CEO Visitor Chair", "Carlo Chair", "Casual chair",
+  "Chester Chair", "Coffee Table", "Como Rope Chair", "Conference Table", "Contour Chair", "Crown Chair", "Delta Coffee Table", "Demon Chair", "Director Chair", "Director Table", "Duo Sofa",
+  "Eames Chair", "Easy Chair", "Echo Chair", "Elara Chair", "Envoy Chair", "Erica Outdoor Chair", "Executive Chair", "Executive Desk", "Executive Table", "F2 High Chair", "Fatima School Chair",
+  "Garrett Chair", "Hain Chair", "Harbour Chair", "Harper Sofa", "High Back Chair", "Horn Chair", "Hug Chair", "Imperial Chair", "Jasmine Chair", "Jelly Fish Chair", "Kate Chair", "Kinetic Chair",
+  "Kiro Chair", "Kova Chair", "LCW Chair", "Lineup Sofa", "Loop Bar Stool", "Loop Chair", "Lounge Accent Chair", "Luca Chair", "Luma Rope Chair", "Lumo Chair", "Luna Chair", "Luno Chair",
+  "Manager Chair", "Manager Table", "Marcela Sofa", "Marlo Chair", "Marlow Barstool", "Marsala Sofa", "Meeting Table", "Mento Chair", "Meridean Coffee Table", "Mira Lounge Chair", "Mosh Chair",
+  "Neo Basin Mixer", "Nexora Chair", "Nira Chair", "Noir Chair", "Nora Chair", "Nordic Chair", "Norix Chair", "Norra Chair", "Nova Chair", "Oakline", "Oakes Chair", "Office Chair Leatherite",
+  "Oliver Chair", "Orbit Pod", "Orin Chair", "Oslo Bar Stool", "Outdoor Chair Sample", "Patio Chair", "Pisces Chair", "Pixis Chair", "Pollo Modular Seating", "Poly Chair", "Quantum", "Raven Chair",
+  "Rayi Chair", "Receptionist chair", "Ripple Sofa", "Rising Chair", "River Chair", "Rocking Chair Set", "Rope Chair 01", "Ruby Chair", "Russo Puff Stool", "Scholar", "Sedo Chair", "Sharne Sofa",
+  "Single Seater Sofa", "Snout Chair", "Sparta Chair", "Stackable Chair", "Staff Chair", "Sterling Table", "Steven Outdoor Chair", "Swift Chair", "Three Seater Sofa", "Title Bar Stool",
+  "Tivon Chair", "Troy Chair", "Tulip Chair", "Two Seater Sofa", "Vanto Chair", "Velix Chair", "Vertex Sofa", "Veyron Chair", "Visitor Chair", "Walton Chair", "Whale Chair", "Wishbone Chair",
+  "Workstation", "Wrap Modular Sofa", "Yark Chair", "Zano Chair", "Zenith Auditorium Chair", "Zora Chair"
+];
+
+let products = J("gp_prod", MASTER_PRODUCTS);
+let items = [{d: "", q: 1}];
+const url = "https://script.google.com/macros/s/AKfycbxrRG9S5Ze8QSTnOs6ndTRbv1VMKwpGddw4V7N9RdfKpNVEUT6cQH9PAl09Ddg8mqP_SA/exec";
+
+const today = () => {
+  const t = new Date();
+  return new Date(t - t.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+};
+$("#date").value = today();
+
+/* ---------- Authorised Signature Handling ---------- */
+$("#authSelect").onchange = e => {
+  $("#manualAuthBox").style.display = e.target.value === "manual" ? "block" : "none";
+};
+
+/* ---------- Item List & Auto-complete ---------- */
+function render() {
+  const box = $("#items");
+  box.innerHTML = "";
+  items.forEach((it, i) => {
+    const r = document.createElement("div");
+    r.className = "row";
+    r.innerHTML = `
+      <b>${i + 1}</b>
+      <div class="cb">
+        <input type="text" placeholder="Search product name or type description..." autocomplete="off">
+        <ul class="list"></ul>
+      </div>
+      <input type="number" min="1" value="${it.q}" aria-label="Quantity">
+      <button class="x" type="button" aria-label="Remove item">&times;</button>
+    `;
+    const inp = r.querySelector(".cb input");
+    const ul = r.querySelector("ul");
+    const qty = r.querySelector("input[type=number]");
+
+    inp.value = it.d;
+    let hi = -1;
+
+    const show = () => {
+      const w = inp.value.toLowerCase().split(/\s+/).filter(Boolean);
+      const m = products.filter(p => w.every(x => p.toLowerCase().includes(x))).slice(0, 40);
+      ul.innerHTML = m.length 
+        ? m.map(p => `<li>${p.replace(/</g, "&lt;")}</li>`).join("") 
+        : `<li class="none">No match found. Custom text will be saved.</li>`;
+      ul.style.display = "block";
+      hi = -1;
+      ul.querySelectorAll("li:not(.none)").forEach(li => {
+        li.onmousedown = e => {
+          e.preventDefault();
+          inp.value = li.textContent;
+          it.d = inp.value;
+          ul.style.display = "none";
+        };
+      });
+    };
+
+    inp.onfocus = show;
+    inp.oninput = () => { it.d = inp.value; show(); };
+    inp.onblur = () => ul.style.display = "none";
+    inp.onkeydown = e => {
+      const L = [...ul.querySelectorAll("li:not(.none)")];
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        hi = (hi + (e.key === "ArrowDown" ? 1 : -1) + L.length) % L.length;
+        L.forEach((l, k) => l.classList.toggle("hi", k === hi));
+        L[hi]?.scrollIntoView({ block: "nearest" });
+      } else if (e.key === "Enter" && hi >= 0) {
+        e.preventDefault();
+        inp.value = L[hi].textContent;
+        it.d = inp.value;
+        ul.style.display = "none";
+      } else if (e.key === "Escape") {
+        ul.style.display = "none";
+      }
+    };
+    qty.oninput = () => it.q = qty.value;
+    r.querySelector(".x").onclick = () => {
+      items.length > 1 ? items.splice(i, 1) : items[0] = {d: "", q: 1};
+      render();
+    };
+    box.appendChild(r);
+  });
+
+  $("#addBtn").disabled = items.length >= MAX_ITEMS;
+  $("#addBtn").textContent = items.length >= MAX_ITEMS ? `Maximum ${MAX_ITEMS} items per pass` : "+ Add Item";
+}
+
+$("#addBtn").onclick = () => {
+  if (items.length < MAX_ITEMS) {
+    items.push({d: "", q: 1});
+    render();
+    const inps = document.querySelectorAll(".cb input");
+    inps[inps.length - 1].focus();
+  }
+};
+render();
+
+/* ---------- Google Sheet Sync ---------- */
+async function api(path, body) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 20000);
+  try {
+    const r = body 
+      ? await fetch(url, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(body), signal: ctl.signal })
+      : await fetch(url + path, { signal: ctl.signal });
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+
+async function loadProducts() {
+  try {
+    const d = await api("?action=products");
+    if (d && d.products && d.products.length) {
+      d.products.forEach(p => { if (!products.includes(p)) products.push(p); });
+      LS.setItem("gp_prod", JSON.stringify(products));
+    }
+  } catch {}
+}
+
+async function flushOfflineQueue() {
+  let p = J("gp_pending", []);
+  if (!p.length) return;
+  const left = [];
+  for (const rec of p) {
+    try {
+      const d = await api("", rec);
+      if (!d.ok) left.push(rec);
+    } catch { left.push(rec); }
+  }
+  LS.setItem("gp_pending", JSON.stringify(left));
+}
+
+loadProducts().then(flushOfflineQueue);
+
+/* ---------- Save & PDF Generation ---------- */
+function say(t, c) {
+  const m = $("#msg");
+  m.textContent = t;
+  m.className = c || "";
+}
+
+$("#go").onclick = async () => {
+  const rows = items.map(i => ({ desc: i.d.trim(), qty: +i.q || 0 })).filter(i => i.desc);
+  if (!$("#to").value.trim()) return say("Please enter destination/office name in To.", "bad");
+  if (!rows.length) return say("Please enter at least one item description.", "bad");
+  if (rows.some(r => r.qty < 1)) return say("Quantities must be 1 or higher.", "bad");
+  
+  const selAuth = $("#authSelect").value;
+  const authName = selAuth === "manual" ? $("#authManual").value.trim() : selAuth;
+  if (!authName) return say("Please select or enter an Authorised Signature name.", "bad");
+
+  if (!window.jspdf) return say("PDF generator loading failed. Check your internet connection.", "bad");
+
+  const tr = TRANS[+document.querySelector("input[name=tr]:checked").value];
+  const rec = {
+    date: $("#date").value,
+    type: document.querySelector("input[name=type]:checked").value,
+    from: $("#from").value.trim(),
+    to: $("#to").value.trim(),
+    transporter: tr.n,
+    vehicle: tr.v,
+    charges: $("#chg").value.trim(),
+    route: $("#route").value.trim(),
+    authorisedBy: authName,
+    items: rows
+  };
+
+  const btn = $("#go");
+  btn.disabled = true;
+  say("Processing and saving...");
+
+  let synced = false;
+  try {
+    const d = await api("", rec);
+    if (d && d.ok) { rec.no = d.no; synced = true; }
+  } catch {}
+
+  if (!synced) {
+    const n = (+LS.getItem("gp_n") || 0) + 1;
+    LS.setItem("gp_n", n);
+    rec.no = "L-" + String(n).padStart(4, "0");
+    const pending = J("gp_pending", []);
+    pending.push(rec);
+    LS.setItem("gp_pending", JSON.stringify(pending));
+  }
+
+  rows.forEach(r => { if (!products.includes(r.desc)) products.push(r.desc); });
+  LS.setItem("gp_prod", JSON.stringify(products));
+
+  generatePDF(rec);
+
+  say(
+    synced ? `Pass ${rec.no} saved to sheet and PDF generated.` 
+           : `Pass ${rec.no}: PDF generated offline. Will sync to sheet once connected.`,
+    synced ? "ok" : "bad"
+  );
+
+  items = [{d: "", q: 1}];
+  $("#to").value = "";
+  $("#route").value = "";
+  $("#chg").value = "";
+  $("#authSelect").value = "Saud Baig";
+  $("#authManual").value = "";
+  $("#manualAuthBox").style.display = "none";
+  render();
+  btn.disabled = false;
+};
+
+/* ---------- Two Copy A4 PDF Template matching Excel layout ---------- */
+function generatePDF(r) {
+  const doc = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
+  const X = [10, 31.6];
+  for (let i = 0; i < 9; i++) X.push(X[X.length - 1] + 18.7);
+  const L = 10, R = X[10], rows = 6, rh = 6.2;
+  const fmtDate = d => d.split("-").reverse().join("/");
+
+  const drawBox = (x1, y, x2, h) => doc.rect(x1, y, x2 - x1, h);
+  const drawTxt = (s, x, y, o) => doc.text(String(s || ""), x, y, o);
+
+  const renderSlipCopy = (y0, copyTag) => {
+    doc.setLineWidth(.35);
+    doc.setDrawColor(0);
+    doc.setTextColor(0);
+
+    // Border
+    drawBox(L, y0, R, 134);
+
+    // Header Logo & Title
+    try {
+      doc.addImage(LOGO, "PNG", L + 2, y0 + 3, 18, 18);
+    } catch (e) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      drawTxt("IFL", L + 4, y0 + 12);
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    drawTxt("INTERNATIONAL FURNITURE PRIVATE LIMITED", 105, y0 + 7, { align: "center" });
+    drawTxt("GATE PASS", 105, y0 + 17, { align: "center" });
+
+    doc.setFontSize(7.5);
+    doc.setTextColor(100);
+    drawTxt(copyTag, R - 2, y0 + 4, { align: "right" });
+    doc.setTextColor(0);
+
+    // Info Fields
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    const drawField = (lb, lx, x1, x2, y, val) => {
+      drawTxt(lb, lx, y + 4.6);
+      drawBox(x1, y, x2, 6.4);
+      doc.setFontSize(9.5);
+      drawTxt(val, (x1 + x2) / 2, y + 4.5, { align: "center", maxWidth: x2 - x1 - 2 });
+      doc.setFontSize(10);
+    };
+
+    drawField("From:", X[1] + 2, X[2], X[4], y0 + 23, r.from);
+    drawField("To:", X[5] + 2, X[6], X[9], y0 + 23, r.to);
+    drawField("No:", X[1] + 2, X[2], X[4], y0 + 32, r.no);
+    drawField("Date:", X[5] + 2, X[6], X[8], y0 + 32, fmtDate(r.date));
+
+    drawTxt("Item to pass the following", L + 1, y0 + 46);
+
+    // Pass Type Row
+    const ty = y0 + 49;
+    doc.setFont("helvetica", "bold");
+    drawTxt("Type:", L + 1, ty + 4.8);
+    doc.setFont("helvetica", "normal");
+
+    [["Inward", 1, 4], ["Outward", 4, 7], ["Return", 7, 10]].forEach(([typeName, startCol, endCol]) => {
+      drawBox(X[startCol], ty, X[endCol], 6.6);
+      drawTxt(typeName, (X[startCol] + X[endCol]) / 2 - 4, ty + 4.7, { align: "center" });
+
+      const cx = X[endCol] - 7, cy = ty + 1.6;
+      doc.setLineWidth(0.25);
+      doc.rect(cx, cy, 3.4, 3.4);
+
+      if (r.type === typeName) {
+        doc.setLineWidth(0.6);
+        doc.line(cx + 0.6, cy + 1.8, cx + 1.5, cy + 2.8);
+        doc.line(cx + 1.5, cy + 2.8, cx + 3.2, cy + 0.4);
+      }
+
+      doc.setLineWidth(0.35);
+    });
+
+    doc.setLineWidth(0.35);
+    doc.line(L, ty, X[10], ty);
+
+    // Table Header
+    const hy = ty + 6.6;
+    drawBox(L, hy, R, 6.2);
+    doc.setFont("helvetica", "bold");
+    drawTxt("S.No", (L + X[1]) / 2, hy + 4.4, { align: "center" });
+    drawTxt("ITEM DESCRIPTION", (X[1] + X[9]) / 2, hy + 4.4, { align: "center" });
+    drawTxt("Quantity", (X[9] + R) / 2, hy + 4.4, { align: "center" });
+    doc.line(X[1], hy, X[1], hy + 6.2);
+    doc.line(X[9], hy, X[9], hy + 6.2);
+
+    // Table Rows
+    doc.setFont("helvetica", "normal");
+    for (let i = 0; i < rows; i++) {
+      const y = hy + 6.2 + i * rh;
+      const item = r.items[i];
+      drawBox(L, y, R, rh);
+      doc.line(X[1], y, X[1], y + rh);
+      doc.line(X[9], y, X[9], y + rh);
+
+      if (item) {
+        doc.setFontSize(9.5);
+        drawTxt(i + 1, (L + X[1]) / 2, y + 4.3, { align: "center" });
+        let descText = item.desc;
+        while (doc.getTextWidth(descText) > (X[9] - X[1] - 3) && descText.length > 3) {
+          descText = descText.slice(0, -2);
+        }
+        if (descText !== item.desc) descText = descText.trim() + "…";
+        drawTxt(descText, X[1] + 1.5, y + 4.3);
+        drawTxt(item.qty, (X[9] + R) / 2, y + 4.3, { align: "center" });
+        doc.setFontSize(10);
+      }
+    }
+
+    // Transport & Logistics Details
+    const ry = hy + 6.2 + rows * rh;
+    drawBox(L, ry, R, 7);
+    drawTxt("Transporter", L + 1, ry + 4.8);
+    doc.line(X[1], ry, X[1], ry + 7);
+    drawTxt(r.transporter, X[1] + 2, ry + 4.8);
+    doc.line(X[3], ry, X[3], ry + 7);
+    drawTxt("Number", X[3] + 2, ry + 4.8);
+    doc.line(X[4], ry, X[4], ry + 7);
+    drawTxt(r.vehicle, X[4] + 2, ry + 4.8);
+    doc.line(X[7], ry, X[7], ry + 7);
+    drawTxt("Charges" + (r.charges ? ": " + r.charges : ""), X[7] + 2, ry + 4.8);
+
+    drawBox(L, ry + 7, R, 10);
+    drawTxt("Route", L + 1, ry + 12);
+    doc.setFontSize(9);
+    doc.text(doc.splitTextToSize(r.route || "", R - X[1] - 3).slice(0, 2), X[1] + 2, ry + 11.2, { lineHeightFactor: 1.15 });
+    doc.setFontSize(10);
+
+    // Signatures
+    const sy = y0 + 128;
+    doc.setLineWidth(.4);
+    doc.line(L + 6, sy, L + 62, sy);
+    doc.line(X[7] + 2, sy, R - 6, sy);
+    
+    // Output Authorised Name above the signature line
+    const authCenterX = (X[7] + 2 + R - 6) / 2;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    drawTxt(r.authorisedBy, authCenterX, sy - 2, { align: "center" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    drawTxt("Received By", L + 34, sy + 4.5, { align: "center" });
+    drawTxt("Authorised Signature", authCenterX, sy + 4.5, { align: "center" });
+  };
+
+  // 1st Copy: Customer Copy
+  renderSlipCopy(8, "CUSTOMER COPY");
+
+  // Perforated dividing line
+  doc.setLineDashPattern([2, 2], 0);
+  doc.setLineWidth(.2);
+  doc.setDrawColor(150);
+  doc.line(5, 147, 205, 147);
+  doc.setLineDashPattern([], 0);
+
+  // 2nd Copy: Receiving Copy
+  renderSlipCopy(152, "RECEIVING COPY");
+
+  doc.save(`Gate-Pass-${r.no}.pdf`);
+}
+</script>
+
+<script>
+(function(){
+  function sendStats(){
+    try {
+      const pending = J("gp_pending", []);
+      const hist = J("gp_history", []);
+      const prods = J("gp_prod", MASTER_PRODUCTS);
+      const seq = +LS.getItem("gp_n") || 0;
+      window.parent.postMessage({
+        type: "ifl-stats",
+        module: "gatepass",
+        stats: {
+          pendingCount: pending.length,
+          localSeq: seq,
+          productCount: prods.length,
+          recent: hist.slice(-8).reverse()
+        }
+      }, "*");
+    } catch(e){}
+  }
+  
+  try {
+    const _setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(k, v) {
+      _setItem.call(this, k, v);
+      setTimeout(sendStats, 20);
+    };
+  } catch(e) {}
+
+  if (typeof generatePDF === "function") {
+    const origGen = generatePDF;
+    generatePDF = function(r) {
+      try {
+        const hist = J("gp_history", []);
+        hist.push({ no: r.no, date: r.date, type: r.type, from: r.from, to: r.to, items: r.items.length, authorisedBy: r.authorisedBy, ts: new Date().toISOString() });
+        LS.setItem("gp_history", JSON.stringify(hist.slice(-50)));
+      } catch(e){}
+      origGen(r);
+      sendStats();
+    };
+  }
+  window.addEventListener("message", e => {
+    if (!e.data) return;
+    if (e.data.type === "ifl-theme") {
+      document.documentElement.dataset.theme = e.data.theme;
+    } else if (e.data.type === "ifl-ping") {
+      sendStats();
+    } else if (e.data.type === "ifl-action" && e.data.passType) {
+      const rad = document.querySelector('input[name=type][value="' + e.data.passType + '"]');
+      if (rad) rad.checked = true;
+    }
+  });
+  sendStats();
+})();
+</script>
+</body>
+</html>

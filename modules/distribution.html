@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Branch Stock Distribution</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef2f6;--card:#fff;--ink:#0f1b2d;--mut:#5d6b7e;--line:#dbe3ec;--acc:#0b7a75;--bad:#d0533f;--warn:#e0a030;--sh:0 1px 2px rgba(15,27,45,.06),0 8px 24px rgba(15,27,45,.06);color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0c1522;--card:#142235;--ink:#e8eef6;--mut:#8fa1b8;--line:#243750;--acc:#2dc4bb;--sh:0 8px 24px rgba(0,0,0,.35);color-scheme:dark}}
+:root[data-theme=dark]{--bg:#0c1522;--card:#142235;--ink:#e8eef6;--mut:#8fa1b8;--line:#243750;--acc:#2dc4bb;--sh:0 8px 24px rgba(0,0,0,.35);color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Figtree,system-ui,sans-serif}
+h1,h2,h3,.big{font-family:'Bricolage Grotesque',Figtree,sans-serif;margin:0;letter-spacing:-.01em}
+.wrap{max-width:1360px;margin:auto;padding:20px}
+header{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin-bottom:18px}
+h1{font-size:28px;font-weight:800}.sub{color:var(--mut);font-size:13px}
+.tabs{display:flex;gap:6px;background:var(--card);padding:5px;border-radius:14px;box-shadow:var(--sh);flex-wrap:wrap}
+.tab{border:0;background:none;color:var(--ink);padding:9px 14px;border-radius:10px;cursor:pointer;font:600 14px Figtree;text-align:left;transition:.25s}
+.tab small{display:block;font-weight:400;color:var(--mut);font-size:12px}
+.tab.on{background:var(--acc);color:#fff}.tab.on small{color:#e3fffd}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer;font:500 13px Figtree}
+.btn:hover,.tab:hover:not(.on){border-color:var(--acc)}:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.card{background:var(--card);border-radius:18px;box-shadow:var(--sh);padding:18px}
+#rib{display:flex;height:84px;gap:3px;border-radius:14px;overflow:hidden;margin-top:12px}
+.seg{flex-basis:0;min-width:6px;border:0;color:#fff;cursor:pointer;text-align:left;padding:8px 10px;overflow:hidden;white-space:nowrap;font:600 12px Figtree;transition:flex-grow .8s cubic-bezier(.2,.8,.2,1),opacity .3s,filter .2s}
+.seg:hover{filter:brightness(1.12)}.seg b{display:block;font-size:15px}.seg.dim{opacity:.28}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:14px 0}
+.kpi{padding:14px 16px}.kpi .l{color:var(--mut);font-size:13px}.big{font-size:28px;font-weight:800;line-height:1.2}.kpi .d{font-size:12px;color:var(--mut)}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:6px 0 2px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:5px 11px;font:500 13px Figtree;cursor:pointer;transition:.2s}
+.chip i{font-style:normal;color:var(--mut);margin-left:6px;font-size:12px}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}.chip.on i{color:inherit;opacity:.7}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:14px}
+.c4{grid-column:span 4}.c5{grid-column:span 5}.c7{grid-column:span 7}.c8{grid-column:span 8}.c12{grid-column:span 12}
+@media(max-width:980px){.c4,.c5,.c7,.c8{grid-column:span 12}}
+h2{font-size:18px;margin-bottom:10px}
+.bar{display:grid;grid-template-columns:minmax(90px,38%) 1fr auto;gap:8px;align-items:center;margin:7px 0;font-size:13px}
+.bar .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar .t{height:9px;background:var(--bg);border-radius:9px;overflow:hidden}
+.bar .f{height:100%;border-radius:9px;width:0;background:var(--acc);transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.donutw{position:relative;display:grid;place-items:center}
+#don{width:100%;max-width:260px;transform:rotate(-90deg)}#don circle{fill:none;stroke-width:26;cursor:pointer;transition:stroke-dasharray .9s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.dc{position:absolute;text-align:center;pointer-events:none}
+.ins{display:flex;gap:10px;margin:9px 0;font-size:14px}.ins span{flex:none;width:8px;border-radius:8px;background:var(--acc)}.ins.w span{background:var(--warn)}.ins.b span{background:var(--bad)}
+.scroll{overflow:auto;max-width:100%}table{border-collapse:collapse;width:100%;font-size:13px}
+th{position:sticky;top:0;background:var(--card);text-align:left;padding:8px;border-bottom:2px solid var(--line);cursor:pointer;white-space:nowrap;color:var(--mut);font-weight:600}
+td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.click{cursor:pointer}tr.click:hover td{background:color-mix(in srgb,var(--acc) 9%,transparent)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px}
+.share{display:inline-block;height:6px;border-radius:6px;background:var(--acc);vertical-align:middle;margin-right:6px}
+.neg{color:var(--bad)}.tag{background:var(--bg);border-radius:6px;padding:2px 7px;font-size:12px;white-space:nowrap}
+input,select{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 10px;border-radius:10px;font:14px Figtree}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+#dr{position:fixed;top:0;right:0;height:100%;width:min(560px,100%);background:var(--card);box-shadow:-12px 0 40px rgba(0,0,0,.25);transform:translateX(105%);transition:transform .45s cubic-bezier(.2,.8,.2,1);z-index:9;overflow:auto;padding:22px;padding-top:calc(22px + env(safe-area-inset-top,0px))}
+#dr.open{transform:none}#sc{position:fixed;inset:0;background:rgba(5,10,20,.45);opacity:0;pointer-events:none;transition:.3s;z-index:8}#sc.open{opacity:1;pointer-events:auto}
+.mini{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}.mini div{background:var(--bg);border-radius:12px;padding:10px 12px}.mini b{display:block;font:700 20px 'Bricolage Grotesque'}
+.hc{transition:background .4s}.hc.lo{box-shadow:inset 0 0 0 2px var(--warn)}.hm td,.hm th{white-space:nowrap}.bh,.pl{cursor:pointer}[hidden]{display:none!important}.kpis{grid-template-columns:repeat(5,1fr)}@media(max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}}.drop{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgba(11,122,117,.88);color:#fff;font:700 28px "Bricolage Grotesque",sans-serif;text-align:center;padding:20px}.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;opacity:0;pointer-events:none;transition:.3s;z-index:30;max-width:90vw}.toast.on{opacity:1;transform:translate(-50%,0)}.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px 28px}.dgrid h3{font-size:15px;margin:10px 0 2px;color:var(--acc)}.stb{display:flex;height:10px;width:130px;background:var(--bg);border-radius:9px;overflow:hidden}.stb i{display:block;height:100%}.hv{width:78px;text-align:right;padding:5px 7px}.hv.ed{border-color:var(--warn)}.ok{color:var(--acc);font-weight:600}.stt{font-weight:700;border-radius:6px;padding:2px 8px;font-size:12px;white-space:nowrap}#stk .kpi .big.r{color:var(--bad)}#stk .kpi .big.g{color:var(--acc)}footer{color:var(--mut);font-size:12px;margin:18px 0}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+.fr{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}.fr label{display:grid;gap:3px;font-size:12px;color:var(--mut)}.fr input,.fr select{min-width:110px}.wn{color:var(--warn);font-size:13px;margin:6px 0;min-height:18px}.pri{background:var(--acc)!important;color:#fff!important;border-color:var(--acc)!important}.dv h3{font-size:15px;margin:14px 0 6px}pre.sn{background:var(--bg);padding:10px;border-radius:10px;overflow:auto;font-size:12px}
+#rst{display:none!important}#rib{overflow-x:auto}.seg{min-width:112px;text-overflow:ellipsis}
+
+/* ===== motion + value section ===== */
+h1{background:linear-gradient(90deg,var(--ink) 0%,var(--acc) 45%,var(--ink) 90%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 7s linear infinite}
+@keyframes shine{to{background-position:-220% 0}}
+body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;background:radial-gradient(38% 38% at 18% 18%,color-mix(in srgb,var(--acc) 16%,transparent),transparent 70%),radial-gradient(34% 34% at 82% 28%,color-mix(in srgb,#3b6fd4 14%,transparent),transparent 70%),radial-gradient(40% 40% at 60% 85%,color-mix(in srgb,var(--warn) 12%,transparent),transparent 70%);animation:drift 24s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate3d(4%,3%,0) scale(1.08)}}
+.card{transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
+.rv{opacity:0;transform:translateY(26px) scale(.985);transition:opacity .7s ease,transform .8s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
+.rv.in{opacity:1;transform:none}.rv.in:hover{transform:translateY(-3px);box-shadow:0 2px 4px rgba(15,27,45,.08),0 16px 36px rgba(15,27,45,.12)}
+.kpis .kpi{animation:kin .6s cubic-bezier(.2,.8,.2,1) both}.kpi:hover{transform:translateY(-4px)}
+.kpis .kpi:nth-child(2){animation-delay:.06s}.kpis .kpi:nth-child(3){animation-delay:.12s}.kpis .kpi:nth-child(4){animation-delay:.18s}.kpis .kpi:nth-child(5){animation-delay:.24s}.kpis .kpi:nth-child(n+6){animation-delay:.3s}
+@keyframes kin{from{opacity:0;transform:translateY(14px) scale(.96)}}
+.seg{transition:flex-grow .9s cubic-bezier(.2,.8,.2,1),opacity .3s,filter .2s,transform .25s}.seg:hover{transform:translateY(-3px)}
+.bar .f{background:linear-gradient(90deg,var(--acc),color-mix(in srgb,var(--acc) 55%,#fff));position:relative;overflow:hidden}
+.bar .f::after,.vbar i::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);transform:translateX(-120%);animation:sheen 3.2s ease-in-out infinite}
+@keyframes sheen{60%,100%{transform:translateX(120%)}}
+#don{animation:dspin 1.4s cubic-bezier(.2,.8,.2,1) both}
+@keyframes dspin{from{transform:rotate(-330deg) scale(.6);opacity:0}to{transform:rotate(-90deg) scale(1);opacity:1}}
+.tab,.chip,.btn{transition:transform .2s,background .25s,border-color .25s,color .25s}.tab:active,.chip:active,.btn:active{transform:scale(.95)}
+.live{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--warn);margin-right:8px;animation:pulse 1.8s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 60%,transparent)}100%{box-shadow:0 0 0 12px transparent}}
+#vs{overflow:hidden}.vg{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;align-items:start;margin-top:6px}
+@media(max-width:980px){.vg{grid-template-columns:1fr}}
+#vs svg{width:100%;height:auto;display:block}
+.gr{transform-box:fill-box;transform-origin:50% 100%;animation:grow .95s cubic-bezier(.2,.8,.2,1) both}
+@keyframes grow{from{transform:scaleY(0)}}
+.fade{animation:kin .7s ease both}
+.vbar{display:inline-flex;vertical-align:middle;width:110px;height:8px;border-radius:8px;background:var(--bg);overflow:hidden;margin-right:6px}
+.vbar i{display:block;height:100%;background:var(--acc);position:relative;overflow:hidden;width:0;transition:width 1.1s cubic-bezier(.2,.8,.2,1)}
+#vt tr,#fut tr{animation:kin .5s ease both}#vt tr:nth-child(2){animation-delay:.05s}#vt tr:nth-child(3){animation-delay:.1s}#vt tr:nth-child(4){animation-delay:.15s}#vt tr:nth-child(5){animation-delay:.2s}#vt tr:nth-child(n+6){animation-delay:.25s}
+.dl{color:var(--acc);font-weight:600}.pn{color:var(--warn);font-weight:600}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
+</style></head><body><div class="wrap">
+<header><div><h1>Branch Stock Distribution</h1><div class="sub" id="sub"></div></div>
+<div class="tabs" id="tabs" role="tablist"></div>
+<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><div class="tabs" id="vw" style="padding:3px" title="Which quantity every chart and table shows"></div><div class="tabs" id="met" style="padding:3px"></div><label class="btn" for="file" style="cursor:pointer;background:var(--acc);color:#fff;border-color:var(--acc)">Upload Excel</label><input id="file" type="file" accept=".xlsx,.csv,.tsv,.txt" hidden><button class="btn" id="tpl">Download template</button><button class="btn" id="csv">Export CSV</button><button class="btn" id="th">Theme</button></div></header>
+<div class="card" style="padding:10px 16px;margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span id="src" class="sub"></span><button class="btn" id="rst" hidden>Use built-in data</button></div>
+<section class="card"><h2 id="rt">Where the pending orders go</h2><div class="sub">Each block is a branch, sized by the selected measure. Click one to filter.</div><div id="rib"></div></section>
+<div class="kpis" id="kpis"></div>
+<section class="card" id="vs"><h2><span class="live"></span><span id="vst">Branch-wise value: delivered vs still to deliver</span></h2><div class="sub" id="vssub"></div><div class="kpis" id="vk"></div><div class="vg"><div id="vc"></div><div class="scroll"><table id="vt"></table></div></div></section>
+<section class="card" id="stk"><h2>Stock position: on hand vs reserved for branches</h2><div class="sub" id="stsub"></div><div id="sumx" style="margin:10px 0"></div><div class="kpis" id="stk-k"></div><div class="chips" id="stc"></div><div class="scroll" style="max-height:600px;margin-top:8px"><table id="stt" class="hm"></table></div></section>
+<section class="card dv" id="dv" style="margin-top:14px"><h2>Delivery schedule</h2><div class="sub">Add, edit or delete deliveries on any date; changes are saved in this browser. Use Export log CSV to keep a copy. On hand, delivered, pending and required update automatically for every date up to the "view as of" date; later dates stay scheduled until that date arrives.</div>
+<div class="fr" style="margin:10px 0"><label>View as of<input type="date" id="ao"></label><button class="btn" data-ao="0">Today</button><button class="btn" data-ao="7">+7 days</button><button class="btn" data-ao="30">+30 days</button><button class="btn" data-ao="all">All scheduled</button><span class="sub" id="aon"></span></div>
+<div class="fr"><label>Date<input type="date" id="fd"></label><label>Type<select id="ft"><option value="out">Dispatch to branch</option><option value="in">Stock received (factory)</option></select></label><label>Product<select id="fp2" style="max-width:250px"></select></label><label id="fbl">Branch<select id="fb"></select></label><label>Qty<input type="number" id="fq" min="1" step="1" style="width:90px"></label><label style="flex:1;min-width:150px">Note<input id="fn" style="width:100%"></label><button class="btn pri" id="fa">Add delivery</button><button class="btn" id="fx" hidden>Cancel</button></div><div class="wn" id="fw"></div>
+<h3>Projection by date</h3><div class="scroll"><table id="dtl"></table></div>
+<h3>Delivery log</h3><div class="tools"><button class="btn" id="dex">Export log CSV</button></div><div class="scroll" style="max-height:360px"><table id="dlog"></table></div></section>
+<section class="card" id="fu" style="margin-top:14px"><h2>Branch fulfilment</h2><div class="sub">Ordered vs delivered vs still pending at each branch, as of the selected date. Click a branch for detail.</div><div class="scroll"><table id="fut"></table></div></section>
+<div class="card"><h2>Filter by branch</h2><div class="chips" id="chips"></div></div>
+<div class="grid">
+<div class="card c4"><h2>Share by branch</h2><div class="donutw"><svg id="don" viewBox="0 0 200 200"></svg><div class="dc" id="dc"></div></div></div>
+<div class="card c4"><h2 id="pt1">Top 10 products</h2><div id="prods"></div></div>
+<div class="card c4"><h2>Insights</h2><div id="ins"></div></div>
+<div class="card c12"><h2>Detailed insights</h2><div class="sub" id="dsub"></div><div class="dgrid" id="dins"></div></div>
+<div class="card c12"><h2 id="mxt">Pending quantity matrix: product by branch</h2><div class="tools"><span class="sub">Darker means more. Outlined cells are low stock at or below</span><input id="thr" type="number" min="0" value="5" style="width:70px" aria-label="Low stock threshold"><span class="sub">units. Click a product or branch name for detail. – not carried, n/a no data.</span></div><div class="scroll" style="max-height:620px"><table class="hm" id="mx"></table></div></div>
+<div class="card c7"><h2>Branch-wise summary</h2><div class="sub">Click a branch for its full product list.</div><div class="scroll" style="max-height:420px"><table id="bt"></table></div></div>
+<div class="card c5"><h2>Low-stock alerts</h2><div class="sub" id="lown"></div><div class="scroll" style="max-height:420px"><table id="lt"></table></div></div>
+<div class="card c7"><h2>Value concentration (ABC)</h2><div class="sub" id="abcn"></div><div class="scroll" style="max-height:440px"><table id="abc"></table></div></div>
+<div class="card c5"><h2>Price bands</h2><div class="sub">Products grouped into four equal-width unit price bands.</div><div class="scroll"><table id="pb"></table></div></div>
+<div class="card c12"><h2>Shop by branch footprint</h2><div class="sub">Units and stock value of each shop in each branch.</div><div class="scroll"><table id="fp"></table></div></div>
+<div class="card c12"><h2>Rebalancing suggestions</h2><div class="sub" id="rbn"></div><div class="scroll" style="max-height:420px"><table id="rb"></table></div></div>
+<div class="card c12"><h2>All products</h2><div class="tools"><input id="q" type="search" placeholder="Search product" aria-label="Search products" size="30"><span class="sub" id="cnt"></span></div>
+<div class="scroll"><table id="it"></table></div><div class="tools" style="margin-top:10px"><button class="btn" id="pv">Previous</button><button class="btn" id="nx">Next</button><span class="sub" id="pg"></span></div></div>
+</div>
+<footer>Data: Loop_OD_1.xlsx (on hand as of 19-11-2026, branch orders and delivered quantities). Reserved = ordered minus delivered. Prices are the Amount column, per unit. Deliveries you add are saved in this browser; export them as CSV to keep a copy. Amounts in Rs.</footer></div>
+<aside id="dr" aria-label="Detail"></aside><div id="sc"></div><div class="drop" id="drop" hidden>Drop your Excel file to update the dashboard</div><div class="toast" id="toast" role="status"></div>
+<script>
+const BUILT={"D":[{"n":"Sintered Stone White Marble 80X80","s":"OD","p":30000,"q":[9,1,5,null,"-",10,12,"-"],"dv":[0,1,5,0,0,0,0,0],"h":44},{"n":"Sintered Stone White Marble 660X660","s":"OD","p":25000,"q":[4,2,15,null,"-","-",5,"-"],"dv":[0,2,15,0,0,0,0,0],"h":21},{"n":"Sintered Stone White Marble DIA1000","s":"OD","p":50000,"q":[1,null,"-",null,"-","-","-","-"],"dv":[0,0,0,0,0,0,0,0],"h":11},{"n":"Pixis Chairs (Pink)","s":"OD","p":40000,"q":[7,4,17,null,"-",12,12,"-"],"dv":[0,4,17,0,0,0,0,0],"h":32},{"n":"Pixis Chairs (Blue)","s":"OD","p":40000,"q":[7,4,17,null,"-",12,12,"-"],"dv":[0,4,17,0,0,0,0,0],"h":36},{"n":"Chester Chairs (Pink)","s":"OD","p":35000,"q":[7,7,"-",null,"-","-",12,"-"],"dv":[0,7,0,0,0,0,0,0],"h":17},{"n":"Chester Chairs (Blue)","s":"OD","p":35000,"q":[7,7,"-",null,"-","-",12,"-"],"dv":[0,7,0,0,0,0,0,0],"h":17},{"n":"Bar Stool Loop","s":"OD","p":36000,"q":[8,null,8,null,"-",8,8,"-"],"dv":[0,0,8,0,0,0,0,0],"h":48},{"n":"Core Base Antique Pink","s":"OD","p":20000,"q":[14,3,20,null,"-",10,17,"-"],"dv":[0,3,20,0,0,0,0,0],"h":66},{"n":"LCW","s":"Loop","p":30000,"q":[12,null,"-",14,34,"-","-",8],"dv":[0,0,0,0,0,0,0,0],"h":39},{"n":"Vortex Table","s":"Loop","p":45000,"q":[4,null,"-",3,10,"-","-",2],"dv":[0,0,0,0,0,0,0,0],"h":32},{"n":"Alpha Chair (Black)","s":"Loop","p":14000,"q":[13,null,"-",15,35,"-",30,7],"dv":[0,0,0,0,0,0,0,0],"h":204},{"n":"Patio Chair (Black)","s":"Loop","p":25000,"q":[8,null,"-","-",null,"-","-","-"],"dv":[0,0,0,0,0,0,0,0],"h":0},{"n":"Patio Table (Black)","s":"Loop","p":45000,"q":[2,null,"-","-",null,"-","-","-"],"dv":[0,0,0,0,0,0,0,0],"h":23},{"n":"Sintered Stone Black Dia600","s":"Loop","p":25000,"q":[10,null,"-",11,9,"-",10,10],"dv":[0,0,0,0,0,0,0,0],"h":78},{"n":"Core Base Black","s":"Loop","p":20000,"q":[10,null,"-",11,15,"-",6,6],"dv":[0,0,0,0,0,0,0,0],"h":63},{"n":"Puff","s":"Loop","p":20000,"q":[6,null,"-",null,6,"-",8,"-"],"dv":[0,0,0,0,0,0,0,0],"h":0},{"n":"Rectangular Table Black","s":"Loop","p":60000,"q":["-",null,"-","-",2,"-","-","-"],"dv":[0,0,0,0,0,0,0,0],"h":10},{"n":"Sqaure Table Black (80X80)","s":"Loop","p":35000,"q":[null,null,null,null,4,"-","-","-"],"dv":[0,0,0,0,0,0,0,0],"h":22}],"BR":["Tipu Sultan","Techno Park (Isl)","Civic Avenue (Isl)","Clifton","Lahore","Gujrawala","Multan","Bahria Town"],"SNAP":"2026-11-19"};
+let D=JSON.parse(JSON.stringify(BUILT.D)),BR=[...BUILT.BR],SRC={built:1,name:'Loop_OD_1.xlsx'};
+const PAL=['#0b7a75','#e0a030','#3b6fd4','#d0533f','#7a5ac8','#2fa36b','#c2417c','#8a6d3b','#2aa6c9','#9aa832','#5b6b7f','#e67e5a'],col=i=>i<PAL.length?PAL[i]:`hsl(${i*47%360} 55% 48%)`;
+const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let S={st:'all',sh:'all',sel:new Set(),q:'',thr:5,sort:['t',-1],pg:0,pv:[],dn:null,met:'c',vw:'p'};
+const VN={p:'pending',d:'delivered',o:'ordered'},VT={p:'to deliver',d:'delivered',o:'ordered'},cap=x=>x[0].toUpperCase()+x.slice(1),mot=!matchMedia('(prefers-reduced-motion:reduce)').matches,P=10,KEY='branchStock.v3';
+const fx=n=>n==null?'':(Math.round(n*10)/10).toLocaleString();
+const fmc=n=>{const a=Math.abs(n),s=n<0?'-':'';return a>=1e6?s+'Rs '+(a/1e6).toFixed(2)+'M':a>=1e3?s+'Rs '+(a/1e3).toFixed(2)+'K':s+'Rs '+Math.round(a).toLocaleString()};
+const fmf=n=>'Rs '+(Math.round(n*100)/100).toLocaleString();
+const fmM=v=>S.met=='c'?fmc(v):fx(v),uL=()=>S.met=='c'?'':' units';
+const hasP=()=>D.some(r=>r.p!=null),val=(r,i)=>typeof r.q[i]=='number'?r.q[i]:0,mv=(r,i)=>S.met=='c'?val(r,i)*(r.p||0):val(r,i);
+const act=()=>S.sel.size?BR.map((_,i)=>i).filter(i=>S.sel.has(i)):BR.map((_,i)=>i);
+const tot=r=>act().reduce((a,i)=>a+val(r,i),0),nb=r=>act().filter(i=>val(r,i)>0).length,cst=r=>tot(r)*(r.p||0),pm=r=>act().reduce((a,i)=>a+mv(r,i),0);
+const allU=r=>r.q.reduce((a,v)=>a+(typeof v=='number'?v:0),0),SHP=()=>[...new Set(D.map(r=>r.s))];
+const base=()=>D.filter(r=>(S.sh=='all'||r.s==S.sh)&&(!S.q||r.n.toLowerCase().includes(S.q.toLowerCase())));
+const rows=()=>base().filter(r=>!S.sel.size||tot(r)>0);
+const bst=b=>BR.map((k,i)=>{const st=b.filter(r=>val(r,i)>0),top=[...st].sort((x,y)=>mv(y,i)-mv(x,i))[0];return{i,k,u:b.reduce((a,r)=>a+val(r,i),0),c:b.reduce((a,r)=>a+val(r,i)*(r.p||0),0),m:b.reduce((a,r)=>a+mv(r,i),0),rows:st,gap:b.filter(r=>r.q[i]=='-').length,nd:b.filter(r=>r.q[i]==null).length,top}});
+const cell=v=>typeof v=='number'?fx(v):v=='-'?'–':'n/a';
+const cellM=(r,i)=>{const v=r.q[i];return typeof v!='number'?cell(v):S.met=='c'?(r.p==null?'no price':fmc(v*r.p)):fx(v)};
+function toast(m,bad){const t=$('toast');t.textContent=m;t.style.background=bad?'var(--bad)':'';t.style.color=bad?'#fff':'';t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),4500)}
+/* ---------- file reading (no external libraries) ---------- */
+async function zipReader(buf){const u=new Uint8Array(buf),dv=new DataView(buf);let e=u.length-22;while(e>=0&&dv.getUint32(e,true)!=0x06054b50)e--;if(e<0)throw Error('This is not a valid .xlsx file. Save it as Excel Workbook (.xlsx) and try again.');const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const F={};
+for(let i=0;i<n;i++){const nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true);F[new TextDecoder().decode(u.subarray(p+46,p+46+nl))]={m:dv.getUint16(p+10,true),cs:dv.getUint32(p+20,true),off:dv.getUint32(p+42,true)};p+=46+nl+xl+cl}
+return async f=>{const z=F[f];if(!z)return null;const o=z.off,s=o+30+dv.getUint16(o+26,true)+dv.getUint16(o+28,true),d=u.subarray(s,s+z.cs);if(z.m==0)return new TextDecoder().decode(d);return await new Response(new Blob([d]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text()}}
+async function readXlsx(buf){const get=await zipReader(buf),X=s=>new DOMParser().parseFromString(s,'text/xml'),wb=X(await get('xl/workbook.xml')),rl=X(await get('xl/_rels/workbook.xml.rels')),ss=[],sst=await get('xl/sharedStrings.xml');
+if(sst)X(sst).querySelectorAll('si').forEach(si=>ss.push([...si.querySelectorAll('t')].map(t=>t.textContent).join('')));
+const NS='http://schemas.openxmlformats.org/officeDocument/2006/relationships',out=[];
+for(const s of wb.querySelectorAll('sheet')){const rel=[...rl.querySelectorAll('Relationship')].find(r=>r.getAttribute('Id')==s.getAttributeNS(NS,'id'));if(!rel)continue;let t=rel.getAttribute('Target');t=t.startsWith('/')?t.slice(1):'xl/'+t;const xml=await get(t);if(!xml)continue;const rs=[];
+X(xml).querySelectorAll('sheetData > row').forEach(row=>{const ri=+row.getAttribute('r')-1,arr=[];row.querySelectorAll(':scope > c').forEach(c=>{const ref=c.getAttribute('r')||'',L=ref.replace(/[0-9]/g,'');let ci=0;for(const ch of L)ci=ci*26+ch.charCodeAt(0)-64;ci--;const ty=c.getAttribute('t'),v=c.querySelector(':scope > v'),is=c.querySelector(':scope > is');let x=null;
+if(ty=='inlineStr'&&is)x=[...is.querySelectorAll('t')].map(q=>q.textContent).join('');else if(v){const tx=v.textContent;x=ty=='s'?ss[+tx]:ty=='str'||ty=='e'?tx:ty=='b'?tx=='1':tx===''?null:Number(tx)}arr[ci]=x});rs[ri]=arr});out.push({name:s.getAttribute('name'),rows:rs})}
+return out}
+function parseCsv(t){t=t.replace(/^\ufeff/,'');const dl=(t.split(/\r?\n/)[0]||'').includes('\t')?'\t':',';const R=[];let r=[],f='',q=false;for(let i=0;i<t.length;i++){const c=t[i];if(q){if(c=='"'&&t[i+1]=='"'){f+='"';i++}else if(c=='"')q=false;else f+=c}else if(c=='"')q=true;else if(c==dl){r.push(f);f=''}else if(c=='\n'||c=='\r'){if(c=='\r'&&t[i+1]=='\n')i++;r.push(f);R.push(r);r=[];f=''}else f+=c}if(f!==''||r.length){r.push(f);R.push(r)}return R.map(r=>r.map(v=>v===''?null:v))}
+const numOf=v=>{if(typeof v=='number')return v;if(typeof v!='string')return null;const t=v.replace(/[,\s]|Rs\.?/gi,'');return t!==''&&!isNaN(Number(t))?Number(t):null};
+const hvv=v=>{const c=cv(v);return c=='-'?0:typeof c=='number'?c:null},cv=v=>{if(typeof v=='number')return v;if(typeof v!='string')return null;const t=v.trim();if(/^[-–—]+$/.test(t))return'-';return numOf(t)};
+function build(sheets){const rx=/product|item|name|description/i;let main=null,hr=-1;
+for(const sh of sheets){for(let i=0;i<Math.min(sh.rows.length,25);i++){const r=sh.rows[i]||[];if(r.filter(v=>v!=null&&v!=='').length>=3&&r.some(v=>typeof v=='string'&&rx.test(v))){main=sh;hr=i;break}}if(main)break}
+if(!main)throw Error('Could not find a header row. The first sheet needs a Product Name column, a Shop column (optional) and one Qty column per branch.');
+const H=[...main.rows[hr]].map(v=>v==null?'':String(v).replace(/\s+/g,' ').trim());for(let i=0;i<H.length;i++)H[i]=H[i]||'';
+const pc=H.findIndex(h=>rx.test(h)),sc=H.findIndex(h=>/^(shop|store|brand|collection|type)\b/i.test(h)),pr=H.findIndex(h=>/(price|rate|cost|amount)/i.test(h)&&!/(qty|quantity|total|value)/i.test(h));
+const hc=H.findIndex(h=>/on.?hand|in.?stock|warehouse|inventory/i.test(h));let bc=H.map((h,i)=>i).filter(i=>H[i]&&i!=pc&&i!=sc&&i!=pr&&i!=hc&&!/^(total|reserved|difference|s\.?\s?no|sr\b|#)/i.test(H[i]));const qc=bc.filter(i=>/\b(qty|quantity)\s*$/i.test(H[i]));if(qc.length)bc=qc;const gr=main.rows[hr-1]||[],isD=i=>{let g='';for(let k=i;k>=0;k--)if(typeof gr[k]=='string'&&gr[k].trim()){g=gr[k];break}return/deliver/i.test(g)},dcl=bc.filter(isD);bc=bc.filter(i=>!isD(i));
+if(pc<0||!bc.length)throw Error('Could not find branch quantity columns. Name them like "Lahore Qty".');
+const nm=bc.map(i=>H[i].replace(/\s*\b(qty|quantity)\s*$/i,'').trim()||H[i]),Dn=[];const dn=dcl.map(i=>H[i].replace(/\s*\b(qty|quantity)\s*$/i,'').trim().toLowerCase());
+main.rows.slice(hr+1).forEach(r=>{if(!r)return;const n=r[pc]==null?'':String(r[pc]).trim();if(!n||/^(grand\s*)?total/i.test(n))return;const p=pr>=0?numOf(r[pr]):null;Dn.push({n,s:sc>=0&&r[sc]!=null&&String(r[sc]).trim()?String(r[sc]).trim():'General',q:bc.map(i=>cv(r[i])),dv:nm.map(n=>{const j=dn.indexOf(n.toLowerCase());return j<0?0:(numOf(r[dcl[j]])||0)}),...(p!=null?{p}:{}),...(hc>=0&&hvv(r[hc])!=null?{h:hvv(r[hc])}:{})})});
+if(!Dn.length)throw Error('No product rows were found under the header.');
+sheets.filter(s=>s!==main&&/price|cost|rate/i.test(s.name)).forEach(sh=>{const hi=sh.rows.findIndex(r=>r&&r.some(v=>typeof v=='string'&&rx.test(v)));if(hi<0)return;const h=sh.rows[hi].map(v=>v==null?'':String(v)),a=h.findIndex(x=>rx.test(x)),b=h.findIndex(x=>/(price|rate|cost)/i.test(x)&&!/total/i.test(x));if(a<0||b<0)return;const m=new Map();sh.rows.slice(hi+1).forEach(r=>{if(r&&r[a]!=null&&numOf(r[b])!=null)m.set(String(r[a]).trim().toLowerCase(),numOf(r[b]))});Dn.forEach(d=>{if(d.p==null&&m.has(d.n.toLowerCase()))d.p=m.get(d.n.toLowerCase())})});
+const sp=hc>=0&&H[hc].match(/(\d{1,2})-(\d{1,2})-(\d{4})/);return{D:Dn,BR:nm,snap:sp?sp[3]+'-'+sp[2].padStart(2,'0')+'-'+sp[1].padStart(2,'0'):null}}
+async function handleFile(f){if(!f)return;try{const ext=f.name.split('.').pop().toLowerCase();if(ext=='xls')throw Error('Old .xls files are not supported. Save as .xlsx and try again.');
+const sheets=['csv','tsv','txt'].includes(ext)?[{name:'csv',rows:parseCsv(await f.text())}]:await readXlsx(await f.arrayBuffer());const m=build(sheets);apply(m,{name:f.name,at:new Date().toLocaleString()},true);
+toast(`Loaded ${f.name}: ${m.D.length} products, ${m.BR.length} branches${m.D.some(r=>r.p!=null)?'':'. No price column found, so cost views are off'}.`)}catch(e){toast(e.message||'Could not read this file.',true)}}
+function apply(m,meta,save){D=m.D;BR=m.BR;if(m.snap)SNAP=m.snap;fillHave(D);SRC=meta;S={...S,sh:'all',sel:new Set(),q:'',sub:'All',pg:0,pv:[],sort:['t',-1],st:'all',met:m.D.some(r=>r.p!=null)?S.met:'u'};$('q').value='';
+if(save){try{localStorage.setItem(KEY,JSON.stringify({D,BR,SRC}))}catch(e){}}full()}
+/* ---------- rendering ---------- */
+function count(el,to,from){const f=v=>el.dataset.f=='p'?v.toFixed(1)+'%':el.dataset.f=='d'?v.toFixed(1):el.dataset.f=='c'?fmc(v):fx(Math.round(v));if(!mot){el.textContent=f(to);return}const t0=performance.now();(function g(t){const p=Math.min(1,(t-t0)/700),v=from+(to-from)*(1-Math.pow(1-p,3));el.textContent=f(v);if(p<1)requestAnimationFrame(g);else el.textContent=f(to)})(t0)}
+function kpis(rs){const a=act(),u=rs.reduce((s,r)=>s+tot(r),0),c=rs.reduce((s,r)=>s+cst(r),0),sl=rs.length*a.length,pp=rs.filter(r=>r.p!=null);let st=0,nc=0,lo=0,nd=0;rs.forEach(r=>a.forEach(i=>{const v=r.q[i];if(typeof v=='number'&&v>0){st++;if(v<=S.thr)lo++}if(v=='-')nc++;if(v==null)nd++}));
+const k=[['Units '+VT[S.vw],u,'',VN[S.vw]+' across '+a.length+' branches'],['Value '+VT[S.vw],hasP()?c:'–','c',hasP()?VN[S.vw]+' × unit price':'no price column in file'],['Products',rs.length,'','with '+VN[S.vw]+' orders'],['Active branches',a.filter(i=>rs.some(r=>val(r,i)>0)).length,'','with '+VN[S.vw]+' orders'],['Avg units per product',rs.length?u/rs.length:0,'d','units ÷ products'],['Coverage',sl?st/sl*100:0,'p','branch slots '+VN[S.vw]],['Not carried',nc,'','product-branch gaps'],['No data',nd,'','blank cells in file'],['Priced products',hasP()?`${pp.length} of ${rs.length}`:'–','x',hasP()&&pp.length?'avg unit price '+fmf(pp.reduce((s,r)=>s+r.p,0)/pp.length):'add a Unit Price column']];
+$('kpis').innerHTML=k.map(x=>`<div class="card kpi"><div class="l">${x[0]}</div><div class="big kv" data-f="${x[2]}">${typeof x[1]=='string'?esc(x[1]):0}</div><div class="d">${x[3]}</div></div>`).join('');
+document.querySelectorAll('#kpis .kv').forEach((e,i)=>{if(typeof k[i][1]=='number'){count(e,k[i][1],S.pv[i]||0);S.pv[i]=k[i][1]}})}
+function ribbon(b){const bs=bst(b),t=bs.reduce((a,g)=>a+g.m,0)||1;$('rt').textContent=({p:'Where the pending orders go',d:'Where the delivered goods went',o:'How the total orders are split'})[S.vw]+(S.met=='c'?' (by value)':' (by units)');$('rib').innerHTML=bs.sort((x,y)=>y.m-x.m).map(g=>`<button class="seg ${S.sel.size&&!S.sel.has(g.i)?'dim':''}" data-b="${g.i}" data-k="${g.i}" style="background:${col(g.i)};flex-grow:0" data-g="${g.m/t*100}" title="${esc(g.k)}: ${fmM(g.m)}${uL()}"><b>${esc(g.k)}</b>${fmM(g.m)+uL()}</button>`).join('');requestAnimationFrame(()=>document.querySelectorAll('.seg').forEach(s=>s.style.flexGrow=s.dataset.g))}
+function chips(b){const bs=bst(b);$('chips').innerHTML=`<button class="chip ${S.sel.size?'':'on'}" data-b="">All branches<i>${b.length}</i></button>`+bs.map(g=>`<button class="chip ${S.sel.has(g.i)?'on':''}" data-b="${g.i}"><span class="dot" style="background:${col(g.i)};margin-right:5px"></span>${esc(g.k)}<i>${g.rows.length}</i></button>`).join('')}
+function donut(b){const bs=bst(b).filter(g=>g.m>0),t=bs.reduce((a,g)=>a+g.m,0)||1,C=2*Math.PI*80;let o=0;S.dn={bs,t};$('don').innerHTML=bs.map(g=>{const l=g.m/t*C,h=`<circle cx="100" cy="100" r="80" stroke="${col(g.i)}" data-k="${g.i}" data-l="${l}" stroke-dasharray="0 ${C}" stroke-dashoffset="${-o}" opacity="${S.sel.size&&!S.sel.has(g.i)?.25:1}"><title>${esc(g.k)}: ${fmM(g.m)}${uL()}</title></circle>`;o+=l;return h}).join('');requestAnimationFrame(()=>document.querySelectorAll('#don circle').forEach(c=>c.setAttribute('stroke-dasharray',`${Math.max(0,c.dataset.l-1.5)} ${C}`)));setCenter()}
+function setCenter(k){const d=S.dn;if(!d)return;const g=k!=null&&k!==''&&d.bs.find(x=>x.i==k);let h;
+if(g)h=`<div class="big" style="font-size:22px">${(g.m/d.t*100).toFixed(1)}%</div><div>${esc(g.k)}</div><div class="sub">${fmM(g.m)}${uL()} · ${g.rows.length} products</div>`;
+else if(S.sel.size){const s=d.bs.filter(x=>S.sel.has(x.i)),u=s.reduce((a,x)=>a+x.m,0);h=`<div class="big" style="font-size:22px">${(u/d.t*100).toFixed(1)}%</div><div>${S.sel.size} selected</div><div class="sub">${fmM(u)}${uL()}</div>`}
+else h=`<div class="big" style="font-size:22px">${fmM(d.t)}</div><div class="sub">${S.met=='c'?'stock cost':'units'} · ${d.bs.length} branches<br>hover a slice</div>`;$('dc').innerHTML=h}
+function bars(el,items,fmt){fmt=fmt||fmM;const m=Math.max(...items.map(i=>i.v),1);$(el).innerHTML=items.map(i=>`<div class="bar"><span class="n" title="${esc(i.k)}">${esc(i.k)}</span><span class="t"><span class="f" data-w="${i.v/m*100}" style="display:block"></span></span><b>${fmt(i.v)}</b></div>`).join('')||'<div class="sub">No data for this filter.</div>';requestAnimationFrame(()=>document.querySelectorAll('#'+el+' .f').forEach(f=>f.style.width=f.dataset.w+'%'))}
+function insights(){const b=D.filter(r=>S.sh=='all'||r.s==S.sh),bs=bst(b).sort((x,y)=>y.u-x.u),T=bs.reduce((a,g)=>a+g.u,0)||1,ins=[];
+ins.push(['',`<b>${esc(bs[0].k)}</b> holds ${(bs[0].u/T*100).toFixed(1)}% of units (${fx(bs[0].u)}). The top three branches carry ${(bs.slice(0,3).reduce((a,g)=>a+g.u,0)/T*100).toFixed(0)}%.`]);
+const pt=[...b].sort((x,y)=>allU(y)-allU(x))[0];ins.push(['',`Largest line is <b>${esc(pt.n)}</b> with ${fx(allU(pt))} units.`]);
+if(hasP()){const cs=[...bs].sort((x,y)=>y.c-x.c),tc=cs.reduce((a,g)=>a+g.c,0),cp=[...b].sort((x,y)=>allU(y)*(y.p||0)-allU(x)*(x.p||0))[0];if(tc>0){ins.push(['',`Pending orders are worth <b>${fmc(tc)}</b>. ${esc(cs[0].k)} carries the most at ${fmc(cs[0].c)} (${(cs[0].c/tc*100).toFixed(0)}%).`]);ins.push(['',`Costliest line: <b>${esc(cp.n)}</b> at ${fmc(allU(cp)*(cp.p||0))}.`])}const np=b.filter(r=>r.p==null);if(np.length)ins.push(['w',`${np.length} products have no price and are left out of cost totals.`])}else ins.push(['w','No unit prices in the file yet. Add a Unit Price column and upload it to see costing.']);
+if(SHP().length>1&&S.sh=='all'){const s=SHP().map(n=>[n,D.filter(r=>r.s==n).reduce((a,r)=>a+allU(r),0)]);ins.push(['',s.map(x=>`${esc(x[0])} ${fx(x[1])} units`).join(' · ')])}
+const one=b.filter(r=>r.q.filter(v=>v>0).length==1);if(one.length)ins.push(['w',`${one.length} products sit in a single branch: ${one.slice(0,3).map(r=>esc(r.n)).join(', ')}${one.length>3?' and more':''}.`]);
+const gp=b.map(r=>{const v=r.q.filter(x=>x>0);return{r,g:v.length>1?Math.max(...v)-Math.min(...v):0}}).sort((x,y)=>y.g-x.g)[0];if(gp&&gp.g){const v=gp.r.q,pos=v.filter(x=>x>0),mx=Math.max(...pos),mn=Math.min(...pos);ins.push(['w',`Biggest imbalance: <b>${esc(gp.r.n)}</b>, ${mx} units at ${esc(BR[v.indexOf(mx)])} against ${mn} at ${esc(BR[v.indexOf(mn)])}.`])}
+const lo=b.reduce((a,r)=>a+r.q.filter(v=>v>0&&v<=S.thr).length,0);if(lo)ins.push(['b',`${lo} product-branch slots are at or below ${S.thr} units.`]);
+bs.filter(g=>g.nd==b.length).forEach(g=>ins.push(['w',`No data reported for ${esc(g.k)} on ${S.sh=='all'?'any':esc(S.sh)} products.`]));
+$('ins').innerHTML=ins.filter(i=>!/single branch|Biggest imbalance|at or below/.test(i[1])).map(i=>`<div class="ins ${i[0]}"><span></span><div>${i[1]}</div></div>`).join('')}
+function matrix(rs){const a=act(),sr=[...rs].sort((x,y)=>pm(y)-pm(x)),mx=Math.max(...rs.flatMap(r=>a.map(i=>mv(r,i))),1);
+$('mx').innerHTML=`<tr><th>Product</th><th>Shop</th>${a.map(i=>`<th class="num bh" data-b="${i}"><span class="dot" style="background:${col(i)}"></span>${esc(BR[i])}</th>`).join('')}<th class="num">${S.met=='c'?'Total cost':'Total'}</th></tr>`+sr.map(r=>`<tr><td class="pl" data-p="${D.indexOf(r)}" style="cursor:pointer"><b>${esc(r.n)}</b></td><td><span class="tag">${esc(r.s)}</span></td>${a.map(i=>{const v=r.q[i],n=typeof v=='number';return`<td class="num hc ${n&&v>0&&v<=S.thr?'lo':''}" style="${n?`background:color-mix(in srgb,var(--acc) ${Math.round(mv(r,i)/mx*45)}%,transparent)`:'color:var(--mut)'}" title="${esc(r.n)} · ${esc(BR[i])}: ${n?v+' units':v=='-'?'not carried':'no data'}${n&&r.p!=null?' · '+fmf(v*r.p):''}">${cellM(r,i)}</td>`}).join('')}<td class="num"><b>${fmM(pm(r))}</b></td></tr>`).join('')+`<tr><th>Total</th><th></th>${a.map(i=>`<th class="num">${fmM(rs.reduce((s,r)=>s+mv(r,i),0))}</th>`).join('')}<th class="num">${fmM(rs.reduce((s,r)=>s+pm(r),0))}</th></tr>`}
+function btable(b){const bs=bst(b),T=bs.reduce((a,g)=>a+g.m,0)||1,hp=hasP();$('bt').innerHTML=`<tr><th>Branch</th><th class="num">Products stocked</th><th class="num">Units</th>${hp?'<th class="num">Stock cost</th>':''}<th>Share of ${S.met=='c'?'cost':'units'}</th><th class="num">Avg units/product</th><th class="num">Not carried</th><th class="num">No data</th><th>Largest line</th></tr>`+[...bs].sort((x,y)=>y.m-x.m).map(g=>`<tr class="click" data-b="${g.i}" tabindex="0"><td><span class="dot" style="background:${col(g.i)}"></span>${esc(g.k)}</td><td class="num">${g.rows.length}</td><td class="num">${fx(g.u)}</td>${hp?`<td class="num">${fmf(g.c)}</td>`:''}<td><span class="share" style="width:${Math.max(2,g.m/T*70)}px"></span>${(g.m/T*100).toFixed(1)}%</td><td class="num">${g.rows.length?fx(g.u/g.rows.length):'–'}</td><td class="num">${g.gap}</td><td class="num">${g.nd}</td><td title="${g.top?esc(g.top.n):''}">${g.top?esc(g.top.n.slice(0,26))+' ('+val(g.top,g.i)+')':'–'}</td></tr>`).join('')}
+function lowtable(rs){const l=[],hp=hasP();rs.forEach(r=>act().forEach(i=>{const v=r.q[i];if(typeof v=='number'&&v>0&&v<=S.thr)l.push([r,i,v,(S.thr-v)*(r.p||0)])}));l.sort(hp?(x,y)=>y[3]-x[3]||x[2]-y[2]:(x,y)=>x[2]-y[2]);const tc=l.reduce((a,x)=>a+x[3],0);$('lown').textContent=`${l.length} slots at or below ${S.thr} units.`+(hp&&l.length?` Topping them up to ${S.thr} units costs about ${fmc(tc)}.`:'');
+$('lt').innerHTML=`<tr><th>Product</th><th>Branch</th><th class="num">Units</th>${hp?'<th class="num">Unit price</th><th class="num">Top-up cost</th>':''}</tr>`+(l.map(x=>`<tr class="click" data-p="${D.indexOf(x[0])}" tabindex="0"><td>${esc(x[0].n)}</td><td><span class="dot" style="background:${col(x[1])}"></span>${esc(BR[x[1]])}</td><td class="num neg">${x[2]}</td>${hp?`<td class="num">${x[0].p==null?'–':fmf(x[0].p)}</td><td class="num">${x[0].p==null?'–':fmf(x[3])}</td>`:''}</tr>`).join('')||`<tr><td colspan="${hp?5:3}" class="sub">No low-stock slots.</td></tr>`)}
+const sk=(r,k)=>k=='n'?r.n:k=='s'?r.s:k=='t'?tot(r):k=='nb'?nb(r):k=='p'?(r.p??-1):k=='c'?cst(r):k=='sh'?pm(r):val(r,+k.slice(1));
+function items(rs){const [k,d]=S.sort,a=act(),hp=hasP(),T=rs.reduce((s,r)=>s+pm(r),0)||1,r=[...rs].sort((x,y)=>{const p=sk(x,k),q=sk(y,k);return(typeof p=='string'?p.localeCompare(q):p-q)*d});const mp=Math.max(1,Math.ceil(r.length/P));S.pg=Math.min(S.pg,mp-1);
+const h=(l,key,c)=>`<th class="${c||''}" data-sort="${key}">${l}${k==key?(d>0?' ▲':' ▼'):''}</th>`;
+$('it').innerHTML=`<tr>${h('Product','n')}${h('Shop','s')}${a.map(i=>h(esc(BR[i]),'b'+i,'num')).join('')}${h(cap(VN[S.vw])+' units','t','num')}${hp?h('Unit price','p','num')+h('Total cost','c','num'):''}${h('Share','sh')}${h('Branches stocked','nb','num')}</tr>`+r.slice(S.pg*P,S.pg*P+P).map(x=>`<tr class="click" data-p="${D.indexOf(x)}" tabindex="0"><td><b>${esc(x.n)}</b></td><td><span class="tag">${esc(x.s)}</span></td>${a.map(i=>`<td class="num" ${typeof x.q[i]!='number'?'style="color:var(--mut)"':''}>${cell(x.q[i])}</td>`).join('')}<td class="num"><b>${fx(tot(x))}</b></td>${hp?`<td class="num">${x.p==null?'–':fmf(x.p)}</td><td class="num">${x.p==null?'–':fmf(cst(x))}</td>`:''}<td><span class="share" style="width:${Math.max(2,pm(x)/T*200)}px"></span>${(pm(x)/T*100).toFixed(1)}%</td><td class="num">${nb(x)} of ${a.length}</td></tr>`).join('')+(r.length?'':`<tr><td colspan="${a.length+6}" class="sub">No products match.</td></tr>`);
+$('cnt').textContent=`${r.length} products`;$('pg').textContent=`Page ${S.pg+1} of ${mp}`;$('pv').disabled=S.pg==0;$('nx').disabled=S.pg>=mp-1}
+const tv=r=>allU(r)*(r.p||0),med=a=>{const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2},bsub=()=>D.filter(r=>S.sh=='all'||r.s==S.sh);
+function abcRows(b){const T=b.reduce((a,r)=>a+tv(r),0)||1;let c=0;return[...b].sort((x,y)=>tv(y)-tv(x)).map(r=>{const v=tv(r),cb=c/T*100;c+=v;return{r,v,sh:v/T*100,cum:c/T*100,cl:cb<80?'A':cb<95?'B':'C'}})}
+function reb(b){const out=[];b.forEach(r=>{const pos=r.q.map((v,i)=>[i,v]).filter(x=>typeof x[1]=='number'&&x[1]>0);if(pos.length<2)return;const tg=Math.round(pos.reduce((a,x)=>a+x[1],0)/pos.length),don=pos.filter(x=>x[1]>tg).map(x=>({i:x[0],s:x[1]-tg})).sort((x,y)=>y.s-x.s),rec=pos.filter(x=>x[1]<tg*.6).sort((x,y)=>x[1]-y[1]);rec.forEach(([ri,q])=>{let need=tg-q;for(const d of don){if(need<1)break;const u=Math.min(need,d.s);if(u>=1){out.push({r,from:d.i,to:ri,u,v:u*(r.p||0)});d.s-=u;need-=u}}})});return out.sort((x,y)=>y.v-x.v||y.u-x.u)}
+function detail(){const b=bsub(),hp=hasP(),bs=bst(b),TU=b.reduce((a,r)=>a+allU(r),0),TV=b.reduce((a,r)=>a+tv(r),0),sec={'Stock position':[],'Value':[],'Pricing':[],'Stock risk':[],'Coverage':[],'Rebalancing':[],'Data quality':[]},add=(k,c,h)=>sec[k].push([c,h]),shown=SHP().filter(s=>S.sh=='all'||s==S.sh);
+$('dsub').textContent=`${S.sh=='all'?'All shops':S.sh}, all branches. Low stock means ${S.thr} units or fewer.`;
+if(hp&&TV>0){const ab=abcRows(b),n80=ab.findIndex(x=>x.cum>=80)+1;
+add('Value','',`Pending branch orders are worth <b>${fmc(TV)}</b> across ${fx(TU)} units, a weighted average of ${fmf(TV/TU)} per unit.`);
+add('Value','',`<b>${n80} of ${b.length}</b> products (${(n80/b.length*100).toFixed(0)}%) make up 80% of the value: ${ab.slice(0,Math.min(3,n80)).map(x=>esc(x.r.n)).join(', ')}${n80>3?' and others':''}.`);
+add('Value','',`Biggest line: <b>${esc(ab[0].r.n)}</b> at ${fmc(ab[0].v)} (${ab[0].sh.toFixed(1)}% of value).`);
+const cb=[...bs].sort((x,y)=>y.c-x.c),lo=cb.filter(g=>g.c>0).pop();add('Value','',`<b>${esc(cb[0].k)}</b> holds the most value, ${fmc(cb[0].c)} (${(cb[0].c/TV*100).toFixed(1)}%). The smallest is ${esc(lo.k)} at ${fmc(lo.c)}.`);
+if(shown.length>1)add('Value','',shown.map(n=>{const x=D.filter(r=>r.s==n).reduce((a,r)=>a+tv(r),0);return`${esc(n)} <b>${fmc(x)}</b> (${(x/TV*100).toFixed(0)}%)`}).join(' · ')+' of stock value.');
+let bp=null;b.forEach(r=>r.q.forEach((v,i)=>{if(typeof v=='number'&&v*(r.p||0)>(bp?bp.v:0))bp={r,i,v:v*r.p,q:v}}));if(bp)add('Value','',`Largest single pile: <b>${esc(bp.r.n)}</b> at ${esc(BR[bp.i])}, ${bp.q} units worth ${fmc(bp.v)}.`)}
+else add('Value','w','Add a Unit Price (Amount) column to see value, concentration and pricing insights.');
+{const w=stk(b),sh=w.filter(x=>x.s=='short'),av=w.filter(x=>x.a>0).sort((x,y)=>y.a-x.a),nd=w.filter(x=>x.s=='nd');
+if(w.length>nd.length){add('Stock position',sh.length?'b':'',sh.length?`<b>${sh.length}</b> products are over-reserved and need <b>${fx(sh.reduce((a,x)=>a+x.q,0))}</b> more units${hp?` (about ${fmc(sh.reduce((a,x)=>a+x.q*(x.r.p||0),0))} to buy)`:''}: ${sh.slice(0,3).map(x=>`${esc(x.r.n)} (${x.q})`).join(', ')}${sh.length>3?' and more':''}.`:'Every product with an on-hand figure covers its branch reservations.');
+if(av.length)add('Stock position','',`<b>${fx(av.reduce((a,x)=>a+x.a,0))}</b> units are spare across ${av.length} products. Most spare: <b>${esc(av[0].r.n)}</b>, ${fx(av[0].a)} units.`)}
+if(nd.length)add('Stock position','w',`${nd.length} products have no on-hand figure, so their reserved quantities cannot be compared.`)}
+const pr=b.filter(r=>r.p!=null);
+if(pr.length){const s=[...pr].sort((x,y)=>x.p-y.p),mn=s[0],mx=s[s.length-1],ps=s.map(r=>r.p),q3=ps[Math.ceil(.75*ps.length)-1],prem=pr.filter(r=>r.p>=q3),pu=prem.reduce((a,r)=>a+allU(r),0),pv=prem.reduce((a,r)=>a+tv(r),0),TUp=pr.reduce((a,r)=>a+allU(r),0),TVp=pr.reduce((a,r)=>a+tv(r),0);
+add('Pricing','',`Unit prices range from <b>${fmf(mn.p)}</b> (${esc(mn.n)}) to <b>${fmf(mx.p)}</b> (${esc(mx.n)}); the median is ${fmf(med(ps))}.`);
+if(TVp>0&&TUp>0)add('Pricing','',`The ${prem.length} products priced at ${fmf(q3)} or more are ${(pu/TUp*100).toFixed(0)}% of units but ${(pv/TVp*100).toFixed(0)}% of value.`);
+if(shown.length>1)add('Pricing','',shown.map(n=>{const x=pr.filter(r=>r.s==n);return x.length?`${esc(n)} averages ${fmf(x.reduce((a,r)=>a+r.p,0)/x.length)} per product`:''}).filter(Boolean).join(' · ')+' (simple average of list prices).');
+const np=b.filter(r=>r.p==null);if(np.length)add('Pricing','w',`${np.length} products have no price and are excluded from value: ${np.slice(0,3).map(r=>esc(r.n)).join(', ')}.`)}
+const low=[];b.forEach(r=>r.q.forEach((v,i)=>{if(typeof v=='number'&&v>0&&v<=S.thr)low.push({r,i,v})}));
+add('Stock risk',low.length?'b':'',low.length?`<b>${low.length}</b> slots hold ${S.thr} units or fewer`+(hp?`; topping each up to ${S.thr} units would cost about <b>${fmc(low.reduce((a,x)=>a+(S.thr-x.v)*(x.r.p||0),0))}</b>.`:'.'):`No slot is at or below ${S.thr} units.`);
+if(hp&&low.length){const t=[...low].sort((x,y)=>(y.r.p||0)-(x.r.p||0)||x.v-y.v)[0];add('Stock risk','w',`Priciest low slot: <b>${esc(t.r.n)}</b> at ${esc(BR[t.i])}, ${t.v} left at ${fmf(t.r.p)} each.`)}
+const one=b.filter(r=>r.q.filter(v=>v>0).length==1);if(one.length)add('Stock risk','w',`${one.length} products sit in just one branch${hp?` (worth ${fmc(one.reduce((a,r)=>a+tv(r),0))})`:''}: ${one.slice(0,3).map(r=>esc(r.n)).join(', ')}${one.length>3?' and more':''}.`);
+const thin=[...bs].filter(g=>g.u>0).sort((x,y)=>x.rows.length-y.rows.length)[0];if(thin)add('Stock risk','',`${esc(thin.k)} stocks only ${thin.rows.length} of ${b.length} products.`);
+const foot={};SHP().forEach(s=>foot[s]=BR.map((_,i)=>i).filter(i=>D.filter(r=>r.s==s).some(r=>val(r,i)>0)));
+add('Coverage','',shown.map(s=>`${esc(s)} is stocked in <b>${foot[s].length}</b> branches (${foot[s].map(i=>esc(BR[i])).join(', ')})`).join('. ')+'.');
+const under=b.map(r=>({r,n:foot[r.s].filter(i=>val(r,i)>0).length,t:foot[r.s].length})).filter(x=>x.t>0&&x.n/x.t<.5);if(under.length)add('Coverage','w',`${under.length} products are carried in fewer than half of their shop's branches, for example ${under.slice(0,3).map(x=>`${esc(x.r.n)} (${x.n} of ${x.t})`).join(', ')}.`);
+add('Coverage','',`Inside each shop's branches, ${b.reduce((a,r)=>a+foot[r.s].filter(i=>r.q[i]=='-').length,0)} product-branch slots are marked not carried.`);
+const rb=reb(b);add('Rebalancing',rb.length?'w':'',rb.length?`<b>${rb.length}</b> transfers would move ${fx(rb.reduce((a,x)=>a+x.u,0))} units${hp?` (${fmc(rb.reduce((a,x)=>a+x.v,0))})`:''} from overstocked to thin branches. Biggest: <b>${esc(rb[0].r.n)}</b>, ${fx(rb[0].u)} units ${esc(BR[rb[0].from])} → ${esc(BR[rb[0].to])}.`:'No obvious transfers: no branch is far below its product average.');
+let nd=0,nc=0;b.forEach(r=>r.q.forEach(v=>{if(v==null)nd++;else if(v=='-')nc++}));add('Data quality','',`${nd} blank cells (no data, counted as 0) and ${nc} dashes (not carried).`);
+shown.forEach(s=>BR.forEach((n,i)=>{if(D.filter(r=>r.s==s).every(r=>r.q[i]==null))add('Data quality','w',`No data at all for ${esc(n)} on ${esc(s)} products.`)}));
+b.filter(r=>(r.n.match(/\(/g)||[]).length!=(r.n.match(/\)/g)||[]).length).forEach(r=>add('Data quality','w',`Check the name "${esc(r.n)}": the bracket is not closed.`));
+$('dins').innerHTML=Object.entries(sec).filter(([k,v])=>v.length&&!['Rebalancing','Stock risk','Coverage'].includes(k)).map(([k,v])=>`<div><h3>${k}</h3>${v.map(x=>`<div class="ins ${x[0]}"><span></span><div>${x[1]}</div></div>`).join('')}</div>`).join('')}
+function abcT(){const b=bsub();if(!hasP()){$('abc').innerHTML='<tr><td class="sub">Add prices to see value concentration.</td></tr>';$('abcn').textContent='';return}const a=abcRows(b),cnt=c=>a.filter(x=>x.cl==c).length,sv=c=>a.filter(x=>x.cl==c).reduce((s,x)=>s+x.sh,0);$('abcn').textContent=`A: ${cnt('A')} products, ${sv('A').toFixed(0)}% of value · B: ${cnt('B')}, ${sv('B').toFixed(0)}% · C: ${cnt('C')}, ${sv('C').toFixed(0)}%`;
+$('abc').innerHTML='<tr><th>#</th><th>Product</th><th>Shop</th><th class="num">Units</th><th class="num">Stock value</th><th>Share</th><th class="num">Cumulative</th><th>Class</th></tr>'+a.map((x,k)=>`<tr class="click" data-p="${D.indexOf(x.r)}" tabindex="0"><td>${k+1}</td><td>${esc(x.r.n)}</td><td><span class="tag">${esc(x.r.s)}</span></td><td class="num">${fx(allU(x.r))}</td><td class="num">${x.r.p==null?'–':fmf(x.v)}</td><td><span class="share" style="width:${Math.max(2,x.sh*1.6)}px"></span>${x.sh.toFixed(1)}%</td><td class="num">${x.cum.toFixed(1)}%</td><td><span class="tag" style="background:${x.cl=='A'?'var(--acc)':x.cl=='B'?'var(--warn)':'var(--line)'};color:${x.cl=='A'?'var(--bg)':'#0f1b2d'};font-weight:700">${x.cl}</span></td></tr>`).join('')}
+function bandT(){const pr=bsub().filter(r=>r.p!=null);if(!pr.length){$('pb').innerHTML='<tr><td class="sub">Add prices to see price bands.</td></tr>';return}const mn=Math.min(...pr.map(r=>r.p)),mx=Math.max(...pr.map(r=>r.p)),w=(mx-mn)/4,N=w?4:1,B=Array.from({length:N},(_,k)=>({lo:mn+k*w,hi:k==N-1?mx:mn+(k+1)*w,rs:[]}));pr.forEach(r=>B[w?Math.min(3,Math.floor((r.p-mn)/w)):0].rs.push(r));const T=pr.reduce((a,r)=>a+tv(r),0)||1;
+$('pb').innerHTML='<tr><th>Unit price band</th><th class="num">Products</th><th class="num">Units</th><th class="num">Stock value</th><th>Share</th></tr>'+B.map(x=>{const v=x.rs.reduce((a,r)=>a+tv(r),0);return`<tr><td>${fmf(x.lo)} – ${fmf(x.hi)}</td><td class="num">${x.rs.length}</td><td class="num">${fx(x.rs.reduce((a,r)=>a+allU(r),0))}</td><td class="num">${fmf(v)}</td><td><span class="share" style="width:${Math.max(2,v/T*100)}px"></span>${(v/T*100).toFixed(1)}%</td></tr>`}).join('')}
+function footT(){const hp=hasP();$('fp').innerHTML=`<tr><th>Shop</th>${BR.map(n=>`<th class="num">${esc(n)}</th>`).join('')}<th class="num">Total</th></tr>`+[...SHP(),null].map(s=>{const rs=D.filter(r=>s==null||r.s==s),c=BR.map((_,i)=>[rs.reduce((a,r)=>a+val(r,i),0),rs.reduce((a,r)=>a+val(r,i)*(r.p||0),0)]);return`<tr${s==null?' style="font-weight:700"':''}><td>${s==null?'All shops':esc(s)}</td>${c.map(x=>`<td class="num" ${x[0]?'':'style="color:var(--mut)"'}>${x[0]?fx(x[0])+(hp?`<br><span class="sub">${fmc(x[1])}</span>`:''):'–'}</td>`).join('')}<td class="num">${fx(rs.reduce((a,r)=>a+allU(r),0))}${hp?`<br><span class="sub">${fmc(rs.reduce((a,r)=>a+tv(r),0))}</span>`:''}</td></tr>`}).join('')}
+function rebT(){const b=bsub(),r=reb(b),hp=hasP();$('rbn').textContent=r.length?`${r.length} suggested transfers. Rule: lift a thin branch (below 60% of the product's average stocked level) to that average, using only stock above the average from other branches.`:'No suggested transfers for this view.';
+$('rb').innerHTML=r.length?`<tr><th>Product</th><th>From (stock)</th><th>To (stock)</th><th class="num">Units to move</th>${hp?'<th class="num">Value moved</th>':''}</tr>`+r.map(x=>`<tr class="click" data-p="${D.indexOf(x.r)}" tabindex="0"><td>${esc(x.r.n)}</td><td><span class="dot" style="background:${col(x.from)}"></span>${esc(BR[x.from])} (${val(x.r,x.from)})</td><td><span class="dot" style="background:${col(x.to)}"></span>${esc(BR[x.to])} (${val(x.r,x.to)})</td><td class="num">${fx(x.u)}</td>${hp?`<td class="num">${x.r.p==null?'–':fmf(x.v)}</td>`:''}</tr>`).join(''):''}
+function render(){recalc();vsec();const b=base(),rs=rows();kpis(rs);ribbon(b);chips(b);donut(b);$('pt1').textContent='Top 10 '+VN[S.vw]+' products by '+(S.met=='c'?'value':'units');$('mxt').textContent=cap(VN[S.vw])+' '+(S.met=='c'?'value':'quantity')+' matrix: product by branch';bars('prods',[...rs].sort((x,y)=>pm(y)-pm(x)).slice(0,10).map(r=>({k:r.n,v:pm(r)})));insights();detail();matrix(rs);btable(b);lowtable(rs);abcT();bandT();footT();rebT();stockSum();delivSec();fulfil();items(rs)}
+const MKEY='branchStock.have.v2';let MAN={};try{MAN=JSON.parse(localStorage.getItem(MKEY)||'{}')||{}}catch(e){}
+const nk=n=>String(n).toLowerCase().replace(/\s+/g,' ').trim(),BH={};BUILT.D.forEach(r=>{if(r.h!=null)BH[nk(r.n)]={h:r.h,e:r.e}});
+function fillHave(rs){rs.forEach(r=>{const k=nk(r.n);if(k in MAN)r.h=MAN[k];else if(r.h==null&&BH[k])r.h=BH[k].h;if(r.e==null&&BH[k])r.e=BH[k].e})}
+const SO={short:0,exact:1,avail:2,nd:3},SL={short:'Short',exact:'Fully allocated',avail:'Spare stock',nd:'No stock figure'},SC={short:['var(--bad)','#fff'],exact:['var(--warn)','#0f1b2d'],avail:['var(--acc)','var(--bg)'],nd:['var(--line)','var(--ink)']};
+document.addEventListener('change',e=>{const t=e.target;if(!t.matches||!t.matches('.hv'))return;const r=D[+t.dataset.i],v=t.value.trim()===''?null:Math.max(0,Math.round(Number(t.value)));if(!r||(v!=null&&isNaN(v)))return;r.h=v;MAN[nk(r.n)]=v;try{localStorage.setItem(MKEY,JSON.stringify(MAN))}catch(x){}render()});
+function drawer(kind,i){const hp=hasP();let h;
+if(kind=='b'){const b=D.filter(r=>S.sh=='all'||r.s==S.sh),B=bst(b),g=B[i],U=B.reduce((a,x)=>a+x.u,0)||1,C=B.reduce((a,x)=>a+x.c,0),sp=SHP().map(s=>`${esc(s)}: <b>${fx(b.filter(r=>r.s==s).reduce((a,r)=>a+val(r,i),0))}</b> units`);
+h=`<h2 style="font-size:24px"><span class="dot" style="background:${col(i)}"></span>${esc(g.k)}</h2><div class="sub">Branch · ${S.sh=='all'?'all shops':esc(S.sh)+' only'}</div><div class="mini"><div>Total units<b>${fx(g.u)}</b></div><div>Share of units<b>${(g.u/U*100).toFixed(1)}%</b></div>${hp?`<div>Stock cost<b>${fmf(g.c)}</b></div><div>Share of cost<b>${C?(g.c/C*100).toFixed(1):'0.0'}%</b></div>`:''}<div>Products stocked<b>${g.rows.length}</b></div><div>Not carried<b>${g.gap}</b></div></div><div class="ins"><span></span><div>By shop: ${sp.join(' · ')}</div></div><h3>${S.met=='c'?'Cost':'Units'} by product</h3><div id="ds"></div><h3 style="margin:14px 0 6px">All products at this branch</h3><div class="scroll"><table id="dt"><tr><th>Product</th><th>Shop</th><th class="num">Units</th>${hp?'<th class="num">Unit price</th><th class="num">Cost</th>':''}</tr>${[...b].sort((x,y)=>val(y,i)-val(x,i)).map(r=>`<tr><td>${esc(r.n)}</td><td>${esc(r.s)}</td><td class="num">${cell(r.q[i])}</td>${hp?`<td class="num">${r.p==null?'–':fmf(r.p)}</td><td class="num">${r.p==null?'–':fmf(val(r,i)*r.p)}</td>`:''}</tr>`).join('')}</table></div>`;$('dr').innerHTML=`<button class="btn" id="x" style="float:right">Close</button>`+h;bars('ds',g.rows.map(r=>({k:r.n,v:mv(r,i)})).sort((x,y)=>y.v-x.v))}
+else{const r=D[i],t=allU(r),T=BR.length,nm=n=>BR.filter((_,j)=>r.q[j]===n).map(esc).join(', ')||'none',tc=r.p==null?null:t*r.p,mxv=Math.max(...r.q.filter(v=>typeof v=='number'));
+h=`<h2 style="font-size:24px">${esc(r.n)}</h2><div class="sub">Product · shop ${esc(r.s)}</div><div class="mini"><div>Total units<b>${fx(t)}</b></div><div>Branches stocked<b>${r.q.filter(v=>v>0).length} of ${T}</b></div>${hp?`<div>Unit price<b>${r.p==null?'–':fmf(r.p)}</b></div><div>Total cost<b>${tc==null?'–':fmf(tc)}</b></div>`:''}<div>Largest branch<b>${esc(BR[r.q.indexOf(mxv)]||'–')}</b></div><div>Avg per stocked branch<b>${fx(t/Math.max(1,r.q.filter(v=>v>0).length))}</b></div><div>On hand<b>${r.h==null?'n/a':fx(r.h)}</b></div><div>Reserved for branches<b>${fx(t)}</b></div><div>Difference<b class="${r.h!=null&&r.h<t?'neg':''}">${r.h==null?'n/a':(r.h-t>0?'+':'')+fx(r.h-t)}</b></div></div><div class="ins"><span></span><div>Not carried at: ${nm('-')}<br>No data for: ${r.q.map((v,j)=>v==null?esc(BR[j]):'').filter(Boolean).join(', ')||'none'}</div></div><h3>${S.met=='c'?'Cost':'Units'} by branch</h3><div id="ds"></div><div class="scroll" style="margin-top:12px"><table id="dt"><tr><th>Branch</th><th class="num">Units</th>${hp?'<th class="num">Cost</th>':''}<th class="num">Share</th></tr>${BR.map((n,j)=>`<tr><td><span class="dot" style="background:${col(j)}"></span>${esc(n)}</td><td class="num">${cell(r.q[j])}</td>${hp?`<td class="num">${r.p==null||typeof r.q[j]!='number'?'–':fmf(r.q[j]*r.p)}</td>`:''}<td class="num">${t?(val(r,j)/t*100).toFixed(1)+'%':'–'}</td></tr>`).join('')}</table></div>`;$('dr').innerHTML=`<button class="btn" id="x" style="float:right">Close</button>`+h;bars('ds',BR.map((n,j)=>({k:n,v:mv(r,j)})).sort((x,y)=>y.v-x.v))}
+$('dr').classList.add('open');$('sc').classList.add('open');$('x').focus()}
+const closeD=()=>{$('dr').classList.remove('open');$('sc').classList.remove('open')};
+function tabs(){const sh=SHP(),c=n=>D.filter(r=>n=='all'||r.s==n),L=sh.length>1?[['all','All shops'],...sh.map(s=>[s,s])]:[['all','All products']];if(!L.some(x=>x[0]==S.sh))S.sh='all';
+$('tabs').innerHTML=L.map(([k,l])=>`<button class="tab ${k==S.sh?'on':''}" role="tab" data-s="${esc(k)}">${esc(l)}<small>${c(k).length} products · ${fx(c(k).reduce((a,r)=>a+allU(r),0))} units${hasP()?' · '+fmc(c(k).reduce((a,r)=>a+allU(r)*(r.p||0),0)):''}</small></button>`).join('');
+$('sub').textContent=`${D.length} products across ${BR.length} branches${sh.length>1?` and ${sh.length} shops`:''}`;
+$('vw').innerHTML=[['p','To deliver'],['d','Delivered'],['o','Ordered']].map(([k,l])=>`<button class="tab ${S.vw==k?'on':''}" data-v="${k}">${l}</button>`).join('');
+$('met').innerHTML=[['u','Units'],['c','Cost']].map(([k,l])=>`<button class="tab ${S.met==k?'on':''}" data-m="${k}" ${k=='c'&&!hasP()?'disabled title="Upload a file with a Unit Price column to enable cost view" style="opacity:.45;cursor:not-allowed"':''}>${l}</button>`).join('');
+const pp=D.filter(r=>r.p!=null).length;$('src').innerHTML=(SRC.built?`Built-in data from <b>${esc(SRC.name)}</b>`:`Uploaded <b>${esc(SRC.name)}</b> · ${esc(SRC.at||'')}`)+` · ${D.length} products · ${BR.length} branches · ${hasP()?pp+' with unit price':'no prices in file'}`;$('rst').hidden=!!SRC.built}
+function full(){tabs();render()}
+const toggle=i=>{i===''?S.sel.clear():S.sel.has(+i)?S.sel.delete(+i):S.sel.add(+i);S.pg=0;render()};
+document.addEventListener('click',e=>{const t=e.target.closest('[data-s],[data-m],[data-v],.chip,.seg,#don circle,tr.click,.pl,.bh,[data-sort],#x,#sc');if(!t)return;
+if(t.dataset.st!=null){S.st=t.dataset.st;stockSum()}
+else if(t.dataset.s!=null&&t.matches('.tab')){S={...S,sh:t.dataset.s,sel:new Set(),pg:0,pv:[]};full()}
+else if(t.dataset.m){S.met=t.dataset.m;S.pv=[];full()}
+else if(t.dataset.v){S.vw=t.dataset.v;S.pv=[];full()}
+else if(t.matches('.chip,.seg'))toggle(t.dataset.b);else if(t.matches('circle'))toggle(t.dataset.k);
+else if(t.matches('.pl'))drawer('p',+t.dataset.p);else if(t.matches('.bh'))drawer('b',+t.dataset.b);
+else if(t.matches('tr.click'))t.dataset.p!=null?drawer('p',+t.dataset.p):drawer('b',+t.dataset.b);
+else if(t.matches('th')){const k=t.dataset.sort;S.sort=S.sort[0]==k?[k,-S.sort[1]]:[k,k=='n'||k=='s'?1:-1];render()}else closeD()});
+document.addEventListener('mouseover',e=>{const c=e.target.closest('#don circle,.seg');setCenter(c?c.dataset.k:null)});
+document.addEventListener('keydown',e=>{if(e.key=='Escape')closeD();if(e.key=='Enter'&&e.target.matches('tr.click'))e.target.click()});
+$('q').oninput=e=>{S.q=e.target.value;S.pg=0;render()};$('thr').oninput=e=>{S.thr=Math.max(0,+e.target.value||0);render()};
+$('pv').onclick=()=>{S.pg--;render()};$('nx').onclick=()=>{S.pg++;render()};
+$('th').onclick=()=>{const r=document.documentElement;r.dataset.theme=getComputedStyle(r).colorScheme=='dark'?'light':'dark'};
+$('file').onchange=e=>{handleFile(e.target.files[0]);e.target.value=''};
+$('rst').onclick=()=>{MAN={};try{localStorage.removeItem(KEY);localStorage.removeItem(MKEY)}catch(e){}apply({D:JSON.parse(JSON.stringify(BUILT.D)),BR:[...BUILT.BR]},{built:1,name:'Loop_OD_1.xlsx'},false);toast('Back to the built-in data.')};
+let dc=0;addEventListener('dragenter',e=>{e.preventDefault();dc++;$('drop').hidden=false});addEventListener('dragover',e=>e.preventDefault());addEventListener('dragleave',()=>{if(--dc<=0){dc=0;$('drop').hidden=true}});addEventListener('drop',e=>{e.preventDefault();dc=0;$('drop').hidden=true;handleFile(e.dataTransfer.files[0])});
+const dl=(name,lines)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv'}));a.download=name;a.click()};
+const q2=v=>/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v,cl=v=>v==null?'':v;
+$('csv').onclick=()=>dl('branch_stock.csv',[['Product Name','Shop','Unit Price',...BR.map(b=>b+' Qty'),'On Hand','Pending Units','Difference','Total Cost'].map(q2).join(',')].concat(rows().map(r=>[q2(r.n),q2(r.s),cl(r.p),...r.q.map(cl),cl(r.h),allU(r),r.h==null?'':r.h-allU(r),r.p==null?'':allU(r)*r.p].join(','))));
+$('tpl').onclick=()=>{dl('branch_stock_template.csv',[['Product Name','Shop','Unit Price',...BR.map(b=>b+' Qty'),'On Hand'].map(q2).join(',')].concat(D.map(r=>[q2(r.n),q2(r.s),cl(r.p),...r.q.map(cl),cl(r.h)].join(','))));toast('Template downloaded. Fill in Unit Price, save, then upload it.')};
+/* ===== deliveries, fulfilment, summary, Google Sheet ===== */
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),TODAY=iso(new Date()),fdt=s=>String(s).split('-').reverse().join('-'),addD=n=>{const d=new Date();d.setDate(d.getDate()+n);return iso(d)},sm2=(a,f)=>a.reduce((t,x)=>t+f(x),0);
+let SNAP=BUILT.SNAP||'2026-11-19',ASOF=TODAY,LOG=[];const LK='branchStock.log.v2';
+let EDIT=null;
+try{LOG=JSON.parse(localStorage.getItem(LK)||'[]')||[]}catch(e){}
+const svL=()=>{try{localStorage.setItem(LK,JSON.stringify(LOG))}catch(e){}};
+const prod=n=>D.find(r=>nk(r.n)==nk(n)),brIdx=n=>{const k=nk(n||'');if(!k)return-1;let j=BR.findIndex(x=>nk(x)==k);return j<0?BR.findIndex(x=>nk(x).includes(k)||k.includes(nk(x))):j};
+function recalc(){D.forEach(r=>{if(!r.oq)r.oq=r.q.slice();const e=eff(r);r.q=r.oq.map((v,i)=>typeof v=='number'?(S.vw=='d'?Math.min(e.dv[i],e.od[i]):S.vw=='o'?e.od[i]:e.pe[i]):v)})}
+function eff(r,asof){if(!r.oq)r.oq=r.q.slice();const ao=asof||ASOF,k=nk(r.n),od=BR.map((_,i)=>typeof r.oq[i]=='number'?r.oq[i]:0),dv=BR.map((_,i)=>(r.dv&&r.dv[i])||0);let net=0;
+LOG.forEach(e=>{if(e.k!=k||e.d>ao||e.d<=SNAP)return;if(e.t=='in')net+=e.q;else{net-=e.q;const j=brIdx(e.b);if(j>=0)dv[j]+=e.q}});
+const pe=od.map((v,i)=>Math.max(0,v-dv[i]));return{h:r.h==null?null:r.h+net,net,od,dv,pe,o:sm2(od,v=>v),dd:sm2(dv,v=>v),res:sm2(pe,v=>v)}}
+function stk(b,asof){return b.map(r=>{const e=eff(r,asof),d=e.h==null?null:e.h-e.res;return{r,e,res:e.res,h:e.h,pe:e.pe,d,s:d==null?'nd':d<0?'short':d>0?'avail':'exact',a:d>0?d:0,q:d<0?-d:0}})}
+const pd=s=>{s=String(s==null?'':s).trim();let m=s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);if(m)return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');m=s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/);if(m)return(m[3].length==2?'20'+m[3]:m[3])+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');const t=Date.parse(s);return isNaN(t)?null:iso(new Date(t))};
+function norm(e){const r=prod(e.n);if(!r||!e.d||!(e.q>0))return null;const o={...e,k:nk(r.n),n:r.n,id:e.id||'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)};if(e.t=='out'){const j=brIdx(e.b);if(j<0)return null;o.b=BR[j]}else o.b='';return o}
+function fulBr(b){return BR.map((k,i)=>{let o=0,dl=0,pe=0,pv=0;b.forEach(r=>{const e=eff(r);o+=e.od[i];dl+=Math.min(e.dv[i],e.od[i]);pe+=e.pe[i];pv+=e.pe[i]*(r.p||0)});return{i,k,o,dl,pe,pv,pc:o?dl/o*100:0}})}
+function stockSum(){const hp=hasP(),all=stk(bsub()),wd=all.filter(x=>x.s!='nd'),pp=x=>x.r.p||0,sm=sm2,ids=BR.map((_,i)=>i);
+const H=sm(wd,x=>x.h),R=sm(wd,x=>x.res),A=sm(wd,x=>x.a),Q=sm(wd,x=>x.q),HV=sm(wd,x=>x.h*pp(x)),RV=sm(wd,x=>x.res*pp(x)),AV=sm(wd,x=>x.a*pp(x)),QV=sm(wd,x=>x.q*pp(x)),ns=wd.filter(x=>x.s=='short').length,nn=all.length-wd.length,fill=R?(R-Q)/R*100:0,O=sm(all,x=>x.e.o),DL=sm(all,x=>x.e.dd),vs=v=>hp?'worth '+fmc(v):'';
+const K=[['On hand (we have)',fx(H),'',vs(HV)||'units in stock'],['Reserved (pending)',fx(R),'',fx(O)+' ordered − '+fx(DL)+' delivered'],['Available (spare)',fx(A),'g',(vs(AV)?vs(AV)+' · ':'')+wd.filter(x=>x.a>0).length+' products'],['Still required',fx(Q),Q>0?'r':'',(hp&&Q>0?'to buy: '+fmc(QV)+' · ':'')+ns+' products short'],['Reservations covered',wd.length?fill.toFixed(1)+'%':'–','',wd.length-ns+' of '+wd.length+' products fully covered']];
+$('stk-k').innerHTML=K.map(k=>`<div class="card kpi"><div class="l">${k[0]}</div><div class="big ${k[2]}">${k[1]}</div><div class="d">${k[3]}</div></div>`).join('');
+$('stsub').textContent=`${S.sh=='all'?'All shops':S.sh}, as of ${fdt(ASOF)}. On hand = today's factory stock (${fdt(SNAP)}). Delivered = already delivered earlier. Reserved = ordered − delivered, still to deliver. Difference = on hand − reserved. On hand now = today's stock ± deliveries you add after ${fdt(SNAP)}, up to the as-of date. Type in the snapshot column to correct a figure (saved in this browser).`+(nn?` ${nn} products have no on-hand figure and are left out of the totals.`:'');
+/* summary */
+const sh=wd.filter(x=>x.s=='short').sort((x,y)=>y.q*pp(y)-x.q*pp(x)),av=wd.filter(x=>x.a>0).sort((x,y)=>y.a-x.a),z=wd.filter(x=>x.h<=0&&x.res>0),fb=fulBr(bsub()).filter(x=>x.o>0).sort((x,y)=>x.pc-y.pc),Qa=sm(stk(bsub(),'9999-12-31').filter(x=>x.s!='nd'),x=>x.q),fut=LOG.filter(e=>e.d>ASOF).length,D0=H-R,L=[];
+L.push([D0<0?'b':'',`We hold <b>${fx(H)}</b> units; branches are still waiting on <b>${fx(R)}</b> (${fx(O)} ordered, ${fx(DL)} delivered). Net position <b>${D0>0?'+':''}${fx(D0)}</b> units.`]);
+L.push([sh.length?'b':'',sh.length?`<b>${sh.length}</b> products are short and need <b>${fx(Q)}</b> more units${hp?' (about '+fmc(QV)+')':''}: ${sh.slice(0,4).map(x=>esc(x.r.n)+' ('+x.q+')').join(', ')}${sh.length>4?' and more':''}.`:'Every product covers its pending branch orders.']);
+if(av.length)L.push(['',`<b>${fx(A)}</b> units are spare across ${av.length} products${hp?' ('+fmc(AV)+')':''}. Most spare: ${esc(av[0].r.n)} (${fx(av[0].a)}).`]);
+if(z.length)L.push(['b',`Nothing in stock but orders pending: ${z.map(x=>esc(x.r.n)+' ('+x.res+')').join(', ')}.`]);
+if(fb.length)L.push(['w',`Delivered <b>${O?(DL/O*100).toFixed(0):0}%</b> of ordered units. Furthest behind: <b>${esc(fb[0].k)}</b> (${fb[0].pc.toFixed(0)}% delivered, ${fx(fb[0].pe)} pending).`]);
+if(fut)L.push(['',`${fut} scheduled deliveries fall after ${fdt(ASOF)}. Once all land, the shortfall goes from <b>${fx(Q)}</b> to <b>${fx(Qa)}</b> units.`]);
+$('sumx').innerHTML=L.map(i=>`<div class="ins ${i[0]}"><span></span><div>${i[1]}</div></div>`).join('');
+const cnt=k=>k=='all'?all.length:all.filter(x=>x.s==k).length;
+$('stc').innerHTML=[['all','All'],['short','Short'],['avail','Spare stock'],['exact','Fully allocated'],['nd','No stock figure']].map(([k,l])=>`<button class="chip ${S.st==k?'on':''}" data-st="${k}">${l}<i>${cnt(k)}</i></button>`).join('');
+const rs=all.filter(x=>S.st=='all'||x.s==S.st).sort((x,y)=>SO[x.s]-SO[y.s]||(x.s=='short'?y.q*(pp(y)||1)-x.q*(pp(x)||1):x.s=='avail'?y.a-x.a:0)||x.r.n.localeCompare(y.r.n)),bc=ids.map(i=>sm(rs,x=>x.pe[i])),tb=a=>`<th class="num">${a}</th>`;
+$('stt').innerHTML=`<tr><th>Product</th><th>Shop</th><th class="num" title="Sheet figure, editable">On hand (snapshot)</th><th class="num">Deliveries ±</th><th class="num">On hand now</th><th class="num">Ordered</th><th class="num">Delivered</th><th class="num" title="Ordered − delivered">Reserved (pending)</th>${ids.map(i=>`<th class="num bh" data-b="${i}" title="Pending for ${esc(BR[i])}"><span class="dot" style="background:${col(i)}"></span>${esc(BR[i])}</th>`).join('')}<th class="num">Difference</th><th class="num">Available</th><th class="num">Required</th>${hp?'<th class="num">Cost to cover</th>':''}<th>Status</th><th>Coverage</th></tr>`+
+rs.map(x=>{const r=x.r,i=D.indexOf(r),e=x.e,mx=Math.max(x.h||0,x.res,1),cv=Math.min(x.h||0,x.res),st=SC[x.s],ed=nk(r.n) in MAN;
+return`<tr><td class="pl" data-p="${i}"><b>${esc(r.n)}</b></td><td><span class="tag">${esc(r.s)}</span></td><td class="num"><input class="hv ${ed?'ed':''}" type="number" min="0" step="1" data-i="${i}" value="${r.h==null?'':r.h}" placeholder="n/a" aria-label="On hand for ${esc(r.n)}" title="${ed?'Edited by you':'Type the quantity in stock'}"></td><td class="num" style="color:var(--mut)">${e.net?(e.net>0?'+':'')+fx(e.net):'–'}</td><td class="num"><b>${x.h==null?'–':fx(x.h)}</b></td><td class="num">${fx(e.o)}</td><td class="num">${fx(e.dd)}</td><td class="num"><b>${fx(x.res)}</b></td>${ids.map(j=>`<td class="num" ${x.pe[j]?'':'style="color:var(--mut)"'}>${x.pe[j]?fx(x.pe[j]):'–'}</td>`).join('')}<td class="num ${x.d<0?'neg':x.d>0?'ok':''}"><b>${x.d==null?'–':(x.d>0?'+':'')+fx(x.d)}</b></td><td class="num ${x.a?'ok':''}">${x.d==null?'–':fx(x.a)}</td><td class="num ${x.q?'neg':''}">${x.d==null?'–':fx(x.q)}</td>${hp?`<td class="num">${x.d==null||r.p==null||!x.q?'–':fmf(x.q*r.p)}</td>`:''}<td><span class="stt" style="background:${st[0]};color:${st[1]}">${SL[x.s]}</span></td><td>${x.d==null?'<span class="sub">n/a</span>':`<div class="stb" title="${fx(cv)} of ${fx(x.res)} pending units are covered"><i style="width:${cv/mx*100}%;background:var(--acc)"></i>${x.a?`<i style="width:${x.a/mx*100}%;background:var(--acc);opacity:.3"></i>`:''}${x.q?`<i style="width:${x.q/mx*100}%;background:var(--bad)"></i>`:''}</div>`}</td></tr>`}).join('')+
+(rs.length?`<tr><th>Total (${rs.length})</th><th></th>${tb(fx(sm(rs.filter(x=>x.r.h!=null),x=>x.r.h)))}${tb(fx(sm(rs,x=>x.e.net)))}${tb(fx(sm(rs.filter(x=>x.s!='nd'),x=>x.h)))}${tb(fx(sm(rs,x=>x.e.o)))}${tb(fx(sm(rs,x=>x.e.dd)))}${tb(fx(sm(rs,x=>x.res)))}${bc.map(v=>tb(fx(v))).join('')}${tb(fx(sm(rs,x=>x.d||0)))}${tb(fx(sm(rs,x=>x.a)))}${tb(fx(sm(rs,x=>x.q)))}${hp?tb(fmf(sm(rs,x=>x.q*pp(x)))):''}<th></th><th></th></tr>`:`<tr><td colspan="${ids.length+13}" class="sub">No products in this view.</td></tr>`)}
+function fwarn0(){const r=D[+$('fp2').value],q=+$('fq').value||0,d=$('fd').value,w=[];if(r&&d){if(d<=SNAP)w.push(`Dated on or before the stock date (${fdt(SNAP)}). Today's factory stock already includes it, so it will not change the figures. Use a later date.`);if($('ft').value=='out'&&q){const e=eff(r,d),j=brIdx($('fb').value);if(e.h!=null&&q>e.h)w.push(`Only ${e.h} on hand by ${fdt(d)}.`);if(j>=0&&q>e.pe[j])w.push(`${BR[j]} only has ${e.pe[j]} pending for this product.`)}}$('fw').textContent=w.join(' ')}
+function delivSec(){const ps=$('fp2'),pv=ps.value,bs=$('fb'),bv=bs.value;ps.innerHTML=D.map((r,i)=>`<option value="${i}">${esc(r.n)}</option>`).join('');if(pv&&D[+pv])ps.value=pv;bs.innerHTML=BR.map(n=>`<option>${esc(n)}</option>`).join('');if(bv)bs.value=bv;$('fbl').hidden=$('ft').value=='in';$('ao').value=ASOF;if(!$('fd').value)$('fd').value=addD(1);
+$('aon').textContent=`${LOG.filter(e=>e.d<=ASOF).length} applied · ${LOG.filter(e=>e.d>ASOF).length} scheduled after ${fdt(ASOF)}`;
+const ds=[...new Set(LOG.map(e=>e.d))].sort(),pts=[['Sheet snapshot','', '0000-00-00'],...ds.map(d=>[fdt(d)+(d>TODAY?' (scheduled)':''),d,d])],bsb=bsub();
+$('dtl').innerHTML='<tr><th>Date</th><th class="num">Dispatched</th><th class="num">Received</th><th class="num">On hand</th><th class="num">Reserved (pending)</th><th class="num">Difference</th><th class="num">Required</th><th class="num">Products short</th></tr>'+pts.map(([l,d,a])=>{const w=stk(bsb,a).filter(x=>x.s!='nd'),o=sm2(LOG.filter(e=>e.d==d&&e.t=='out'),e=>e.q),i=sm2(LOG.filter(e=>e.d==d&&e.t=='in'),e=>e.q),h=sm2(w,x=>x.h),r=sm2(w,x=>x.res);return`<tr><td>${l}</td><td class="num">${d?fx(o):'–'}</td><td class="num">${d?fx(i):'–'}</td><td class="num">${fx(h)}</td><td class="num">${fx(r)}</td><td class="num ${h<r?'neg':'ok'}">${h-r>0?'+':''}${fx(h-r)}</td><td class="num">${fx(sm2(w,x=>x.q))}</td><td class="num">${w.filter(x=>x.s=='short').length}</td></tr>`}).join('');
+$('fa').textContent=EDIT?'Save changes':'Add delivery';$('fx').hidden=!EDIT;
+$('dlog').innerHTML='<tr><th>Date</th><th>Type</th><th>Product</th><th>Branch</th><th class="num">Qty</th><th>Status</th><th>Note</th><th></th></tr>'+([...LOG].sort((x,y)=>x.d.localeCompare(y.d)).map(e=>{const ap=e.d<=ASOF,ins=e.d<=SNAP;return`<tr${EDIT==e.id?' style="outline:2px solid var(--acc)"':''}><td>${fdt(e.d)}</td><td><span class="tag">${e.t=='in'?'Received':'Dispatch'}</span></td><td>${esc(e.n)}</td><td>${esc(e.b||'Factory')}</td><td class="num">${fx(e.q)}</td><td><span class="stt" style="background:${ins?'var(--line)':ap?'var(--acc)':'var(--warn)'};color:${ins?'var(--ink)':ap?'var(--bg)':'#0f1b2d'}" title="${ins?'Dated on or before the stock date: already in today\'s stock':''}">${ins?'In today\'s stock':ap?'Applied':'Scheduled'}</span></td><td>${esc(e.note||'')}</td><td style="white-space:nowrap"><button class="btn" data-ed="${e.id}">Edit</button> <button class="btn" data-del="${e.id}">Delete</button></td></tr>`}).join('')||'<tr><td colspan="8" class="sub">No deliveries yet. Add one above.</td></tr>')}
+function fulfil(){const b=bsub(),f=fulBr(b).filter(x=>x.o>0),hp=hasP(),T={o:sm2(f,x=>x.o),dl:sm2(f,x=>x.dl),pe:sm2(f,x=>x.pe),pv:sm2(f,x=>x.pv)};
+$('fut').innerHTML=`<tr><th>Branch</th><th class="num">Ordered</th><th class="num">Delivered</th><th class="num">Pending</th><th>Fulfilled</th>${hp?'<th class="num">Pending value</th>':''}<th class="num">Products pending</th></tr>`+f.map(x=>`<tr class="click" data-b="${x.i}" tabindex="0"><td><span class="dot" style="background:${col(x.i)}"></span>${esc(x.k)}</td><td class="num">${fx(x.o)}</td><td class="num">${fx(x.dl)}</td><td class="num ${x.pe?'neg':''}"><b>${fx(x.pe)}</b></td><td><div class="stb" style="display:inline-flex;vertical-align:middle"><i style="width:${x.pc}%;background:var(--acc)"></i></div> ${x.pc.toFixed(0)}%</td>${hp?`<td class="num">${fmf(x.pv)}</td>`:''}<td class="num">${b.filter(r=>eff(r).pe[x.i]>0).length}</td></tr>`).join('')+`<tr><th>Total</th><th class="num">${fx(T.o)}</th><th class="num">${fx(T.dl)}</th><th class="num">${fx(T.pe)}</th><th>${T.o?(T.dl/T.o*100).toFixed(0):0}%</th>${hp?`<th class="num">${fmf(T.pv)}</th>`:''}<th></th></tr>`}
+
+function vsec(){const b=bsub(),hp=hasP()&&S.met=='c',m=hp?fmc:fx,W=BR.map((k,i)=>{let o=0,d=0,p=0;b.forEach(r=>{const e=eff(r),pr=hp?(r.p||0):1;o+=e.od[i]*pr;d+=Math.min(e.dv[i],e.od[i])*pr;p+=e.pe[i]*pr});return{i,k,o,d,p,pc:o?d/o*100:0}}).filter(x=>x.o>0),T={o:sm2(W,x=>x.o),d:sm2(W,x=>x.d),p:sm2(W,x=>x.p)};
+$('vst').textContent='Branch-wise '+(hp?'value':'units')+': delivered vs still to deliver';$('vssub').textContent=`${S.sh=='all'?'All shops':S.sh}. ${hp?'Showing value (quantity × unit price).':'Showing units.'} Delivered = already sent to the branch. To deliver = ordered − delivered. Click a branch for detail.`;
+const K=[['Total ordered',T.o,'ordered by '+W.length+' branches','',''],['Delivered',T.d,(T.o?T.d/T.o*100:0).toFixed(1)+'% of the order','g','dl'],['Still to deliver',T.p,(T.o?T.p/T.o*100:0).toFixed(1)+'% of the order','','pn']];
+$('vk').innerHTML=K.map(k=>`<div class="card kpi"><div class="l">${k[0]}</div><div class="big vkv ${k[3]}" data-f="${hp?'c':''}">0</div><div class="d">${k[2]}</div></div>`).join('');
+document.querySelectorAll('#vk .vkv').forEach((e,i)=>count(e,K[i][1],0));
+const w=760,h=330,L=70,Bt=78,Tp=34,cw=(w-L-10)/Math.max(W.length,1),bw=Math.min(66,cw*.6),mx=Math.max(...W.map(x=>x.o),1),ph=h-Bt-Tp,y=v=>Tp+ph-v/mx*ph,ln=s=>{const o=[];let c='';s.split(' ').forEach(t=>{if((c+' '+t).trim().length>11&&c){o.push(c);c=t}else c=(c+' '+t).trim()});o.push(c);return o};
+let g=[0,.25,.5,.75,1].map(t=>`<line x1="${L}" x2="${w-6}" y1="${y(mx*t)}" y2="${y(mx*t)}" style="stroke:var(--line)" stroke-dasharray="${t?'3 4':'0'}"/><text x="${L-8}" y="${y(mx*t)+4}" text-anchor="end" font-size="10.5" style="fill:var(--mut)">${m(mx*t)}</text>`).join('');
+g+=`<g font-size="11" style="fill:var(--mut)"><rect x="${w-250}" y="4" width="11" height="11" rx="3" style="fill:var(--acc)"/><text x="${w-234}" y="14">Delivered</text><rect x="${w-160}" y="4" width="11" height="11" rx="3" style="fill:var(--warn)"/><text x="${w-144}" y="14">Still to deliver</text></g>`;
+g+=W.map((x,k)=>{const cx=L+cw*k+cw/2,x0=cx-bw/2,hd=x.d/mx*ph,hq=x.p/mx*ph,dl=k*90,nm=ln(x.k);
+return`<g class="fade" style="animation-delay:${dl}ms;cursor:pointer" data-b="${x.i}" tabindex="0"><title>${esc(x.k)}\nOrdered ${m(x.o)}\nDelivered ${m(x.d)} (${x.pc.toFixed(0)}%)\nTo deliver ${m(x.p)}</title><rect class="gr" x="${x0}" y="${y(x.d)}" width="${bw}" height="${hd}" rx="4" style="fill:var(--acc);animation-delay:${dl}ms"/><rect class="gr" x="${x0}" y="${y(x.o)}" width="${bw}" height="${hq}" rx="4" style="fill:var(--warn);animation-delay:${dl+260}ms"/>
+${hd>18?`<text x="${cx}" y="${y(x.d)+hd/2+4}" text-anchor="middle" font-size="10.5" font-weight="600" fill="#fff">${m(x.d)}</text>`:''}${hq>18?`<text x="${cx}" y="${y(x.o)+hq/2+4}" text-anchor="middle" font-size="10.5" font-weight="600" fill="#0f1b2d">${m(x.p)}</text>`:''}
+<text x="${cx}" y="${y(x.o)-7}" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--ink)">${m(x.o)}</text>
+<text x="${cx}" y="${h-Bt+17}" text-anchor="middle" font-size="11.5" font-weight="600" style="fill:var(--ink)">${nm.map((t,j)=>`<tspan x="${cx}" dy="${j?13:0}">${esc(t)}</tspan>`).join('')}</text>
+<text x="${cx}" y="${h-Bt+17+nm.length*13+4}" text-anchor="middle" font-size="11" font-weight="700" style="fill:${x.pc>0?'var(--acc)':'var(--mut)'}">${x.pc.toFixed(0)}% delivered</text></g>`}).join('');
+$('vc').innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Delivered and pending value by branch">${g}</svg>`;
+$('vt').innerHTML=`<tr><th>Branch</th><th class="num">Ordered</th><th class="num">Delivered</th><th class="num">To deliver</th><th>Delivered %</th></tr>`+W.map(x=>`<tr class="click" data-b="${x.i}" tabindex="0"><td><span class="dot" style="background:${col(x.i)}"></span>${esc(x.k)}</td><td class="num">${m(x.o)}</td><td class="num ${x.d?'dl':''}">${x.d?m(x.d):'–'}</td><td class="num ${x.p?'pn':''}">${x.p?m(x.p):'–'}</td><td><span class="vbar"><i data-w="${x.pc}"></i></span>${x.pc.toFixed(0)}%</td></tr>`).join('')+`<tr><th>Total</th><th class="num">${m(T.o)}</th><th class="num">${m(T.d)}</th><th class="num">${m(T.p)}</th><th>${(T.o?T.d/T.o*100:0).toFixed(0)}%</th></tr>`;
+requestAnimationFrame(()=>requestAnimationFrame(()=>document.querySelectorAll('#vt .vbar i').forEach(f=>f.style.width=f.dataset.w+'%')))}
+function fwarn(){const sv=LOG;if(EDIT)LOG=LOG.filter(x=>x.id!=EDIT);try{fwarn0()}finally{LOG=sv}}
+function fwarn(){const sv=LOG;if(EDIT)LOG=LOG.filter(x=>x.id!=EDIT);try{fwarn0()}finally{LOG=sv}}
+function endEdit(){EDIT=null;$('fq').value='';$('fn').value='';$('fw').textContent=''}
+function startEdit(id){const e=LOG.find(x=>x.id==id);if(!e)return;EDIT=id;$('fd').value=e.d;$('ft').value=e.t;delivSec();$('fp2').value=D.indexOf(prod(e.n));if(e.b)$('fb').value=e.b;$('fq').value=e.q;$('fn').value=e.note||'';delivSec();fwarn();$('fd').scrollIntoView({behavior:'smooth',block:'center'})}
+$('fa').onclick=()=>{const o=EDIT&&LOG.find(x=>x.id==EDIT),e=norm({id:o?o.id:undefined,d:$('fd').value,t:$('ft').value,n:D[+$('fp2').value]&&D[+$('fp2').value].n,b:$('fb').value,q:Math.round(+$('fq').value),note:$('fn').value.trim(),src:'sheet'});if(!e)return toast('Pick a date, product and branch and enter a quantity above 0.',true);if(o)LOG[LOG.indexOf(o)]=e;else LOG.push(e);svL();endEdit();render();toast(`${o?'Updated':'Added'}: ${e.q} × ${e.n}${e.b?' to '+e.b:' received'} on ${fdt(e.d)}.`)};
+$('fx').onclick=()=>{endEdit();render()};
+$('dv').addEventListener('click',e=>{const b=e.target.closest('[data-del],[data-ed],[data-ao]');if(!b)return;if(b.dataset.ed){startEdit(b.dataset.ed);return}if(b.dataset.del){const x=LOG.find(y=>y.id==b.dataset.del);if(!x||!confirm(`Delete ${x.q} × ${x.n} on ${fdt(x.d)}? `))return;LOG=LOG.filter(y=>y.id!=x.id);svL();if(EDIT==x.id)endEdit()}else{const a=b.dataset.ao;ASOF=a=='all'?LOG.reduce((m,x)=>x.d>m?x.d:m,TODAY):addD(+a)}render()});
+$('dv').addEventListener('change',e=>{const t=e.target;if(t.id=='ao'){ASOF=t.value||TODAY;render()}else if(['fd','ft','fp2','fb'].includes(t.id)){delivSec();fwarn()}});
+$('fq').oninput=fwarn;
+$('dex').onclick=()=>dl('deliveries.csv',[['Date','Type','Product','Branch','Qty','Note'].join(',')].concat([...LOG].sort((x,y)=>x.d.localeCompare(y.d)).map(e=>[e.d,e.t=='in'?'Receipt':'Dispatch',q2(e.n),q2(e.b||''),e.q,q2(e.note||'')].join(','))));
+
+['lown','rbn'].forEach(id=>{const c=$(id).closest('.card');if(c)c.hidden=true});
+
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.D&&s.BR&&s.D.length){D=s.D;BR=s.BR;SRC=s.SRC}}catch(e){}
+fillHave(D);full();window.__ready=1;
+(function(){const els=[...document.querySelectorAll('.wrap > .card, .wrap > section.card, .grid > .card')];if(!mot||!('IntersectionObserver' in window)){return}
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.06,rootMargin:'0px 0px -4% 0px'});els.forEach((el,i)=>{el.classList.add('rv');el.style.transitionDelay=(i<3?i*90:0)+'ms';io.observe(el)});setTimeout(()=>els.forEach(el=>el.classList.add('in')),2500)})();
+</script>
+<script>
+(function(){
+  function sendStats(){
+    try {
+      const all = stk(D);
+      const wd = all.filter(x => x.s !== "nd");
+      const totalOrdered = all.reduce((a,x)=>a+x.e.o,0);
+      const totalDelivered = all.reduce((a,x)=>a+x.e.dd,0);
+      const totalPending = all.reduce((a,x)=>a+x.res,0);
+      const pendingVal = all.reduce((a,x)=>a+x.res*(x.r.p||0),0);
+      const shortItems = wd.filter(x => x.s === "short");
+      const shortUnits = shortItems.reduce((a,x)=>a+x.q,0);
+      const shortVal = shortItems.reduce((a,x)=>a+x.q*(x.r.p||0),0);
+      const branches = fulBr(D).map(b => ({ name: b.k, ordered: b.o, delivered: b.dl, pending: b.pe, pendingVal: b.pv, pct: b.pc }));
+      window.parent.postMessage({
+        type: "ifl-stats",
+        module: "distribution",
+        stats: {
+          snap: SNAP,
+          asof: ASOF,
+          products: D.length,
+          branchesCount: BR.length,
+          totalOrdered,
+          totalDelivered,
+          totalPending,
+          pendingVal,
+          shortCount: shortItems.length,
+          shortUnits,
+          shortVal,
+          shortList: shortItems.slice(0, 5).map(x => ({ name: x.r.n, need: x.q, onHand: x.h })),
+          scheduledAfterToday: LOG.filter(e => e.d > TODAY).length,
+          logCount: LOG.length,
+          branches
+        }
+      }, "*");
+    } catch(e){}
+  }
+  
+  try {
+    const _setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(k, v) {
+      _setItem.call(this, k, v);
+      setTimeout(sendStats, 20);
+    };
+  } catch(e) {}
+
+  document.addEventListener("change", () => setTimeout(sendStats, 60));
+  window.addEventListener("message", e => {
+    if (!e.data) return;
+    if (e.data.type === "ifl-theme") {
+      document.documentElement.dataset.theme = e.data.theme;
+    } else if (e.data.type === "ifl-ping") {
+      sendStats();
+    } else if (e.data.type === "ifl-action" && e.data.scrollTo) {
+      const el = document.getElementById(e.data.scrollTo);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }
+  });
+  sendStats();
+})();
+</script>
+</body></html>

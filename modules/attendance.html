@@ -1,0 +1,280 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Attendance Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#eef2f6;--card:#fff;--ink:#0f1b2d;--mut:#5d6b7e;--line:#dbe3ec;--acc:#0b7a75;--bad:#d0533f;--warn:#e0a030;--sh:0 1px 2px rgba(15,27,45,.06),0 8px 24px rgba(15,27,45,.06);color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0c1522;--card:#142235;--ink:#e8eef6;--mut:#8fa1b8;--line:#243750;--acc:#2dc4bb;--sh:0 8px 24px rgba(0,0,0,.35);color-scheme:dark}}
+:root[data-theme=dark]{--bg:#0c1522;--card:#142235;--ink:#e8eef6;--mut:#8fa1b8;--line:#243750;--acc:#2dc4bb;--sh:0 8px 24px rgba(0,0,0,.35);color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Figtree,system-ui,sans-serif}
+h1,h2,h3,.big{font-family:'Bricolage Grotesque',Figtree,sans-serif;margin:0;letter-spacing:-.01em}
+.wrap{max-width:1360px;margin:auto;padding:20px}
+header{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin-bottom:18px}
+h1{font-size:28px;font-weight:800}.sub{color:var(--mut);font-size:13px}
+.tabs{display:flex;gap:6px;background:var(--card);padding:5px;border-radius:14px;box-shadow:var(--sh);flex-wrap:wrap}
+.tab{border:0;background:none;color:var(--ink);padding:9px 14px;border-radius:10px;cursor:pointer;font:600 14px Figtree;text-align:left;transition:.25s}
+.tab small{display:block;font-weight:400;color:var(--mut);font-size:12px}
+.tab.on{background:var(--acc);color:#fff}.tab.on small{color:#e3fffd}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer;font:500 13px Figtree}
+.btn:hover,.tab:hover:not(.on){border-color:var(--acc)}:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.card{background:var(--card);border-radius:18px;box-shadow:var(--sh);padding:18px}
+#rib{display:flex;height:84px;gap:3px;border-radius:14px;overflow:hidden;margin-top:12px}
+.seg{flex-basis:0;min-width:6px;border:0;color:#fff;cursor:pointer;text-align:left;padding:8px 10px;overflow:hidden;white-space:nowrap;font:600 12px Figtree;transition:flex-grow .8s cubic-bezier(.2,.8,.2,1),opacity .3s,filter .2s}
+.seg:hover{filter:brightness(1.12)}.seg b{display:block;font-size:15px}.seg.dim{opacity:.28}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:14px 0}
+.kpi{padding:14px 16px}.kpi .l{color:var(--mut);font-size:13px}.big{font-size:28px;font-weight:800;line-height:1.2}.kpi .d{font-size:12px;color:var(--mut)}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:6px 0 2px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:5px 11px;font:500 13px Figtree;cursor:pointer;transition:.2s}
+.chip i{font-style:normal;color:var(--mut);margin-left:6px;font-size:12px}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}.chip.on i{color:inherit;opacity:.7}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:14px}
+.c4{grid-column:span 4}.c5{grid-column:span 5}.c7{grid-column:span 7}.c8{grid-column:span 8}.c12{grid-column:span 12}
+@media(max-width:980px){.c4,.c5,.c7,.c8{grid-column:span 12}}
+h2{font-size:18px;margin-bottom:10px}
+.bar{display:grid;grid-template-columns:minmax(90px,38%) 1fr auto;gap:8px;align-items:center;margin:7px 0;font-size:13px}
+.bar .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar .t{height:9px;background:var(--bg);border-radius:9px;overflow:hidden}
+.bar .f{height:100%;border-radius:9px;width:0;background:var(--acc);transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.donutw{position:relative;display:grid;place-items:center}
+#don{width:100%;max-width:260px;transform:rotate(-90deg)}#don circle{fill:none;stroke-width:26;cursor:pointer;transition:stroke-dasharray .9s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.dc{position:absolute;text-align:center;pointer-events:none}
+.ins{display:flex;gap:10px;margin:9px 0;font-size:14px}.ins span{flex:none;width:8px;border-radius:8px;background:var(--acc)}.ins.w span{background:var(--warn)}.ins.b span{background:var(--bad)}
+.scroll{overflow:auto;max-width:100%}table{border-collapse:collapse;width:100%;font-size:13px}
+th{position:sticky;top:0;background:var(--card);text-align:left;padding:8px;border-bottom:2px solid var(--line);cursor:pointer;white-space:nowrap;color:var(--mut);font-weight:600}
+td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.click{cursor:pointer}tr.click:hover td{background:color-mix(in srgb,var(--acc) 9%,transparent)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px}
+.share{display:inline-block;height:6px;border-radius:6px;background:var(--acc);vertical-align:middle;margin-right:6px}
+.neg{color:var(--bad)}.tag{background:var(--bg);border-radius:6px;padding:2px 7px;font-size:12px;white-space:nowrap}
+input,select{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 10px;border-radius:10px;font:14px Figtree}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+#dr{position:fixed;top:0;right:0;height:100%;width:min(560px,100%);background:var(--card);box-shadow:-12px 0 40px rgba(0,0,0,.25);transform:translateX(105%);transition:transform .45s cubic-bezier(.2,.8,.2,1);z-index:9;overflow:auto;padding:22px;padding-top:calc(22px + env(safe-area-inset-top,0px))}
+#dr.open{transform:none}#sc{position:fixed;inset:0;background:rgba(5,10,20,.45);opacity:0;pointer-events:none;transition:.3s;z-index:8}#sc.open{opacity:1;pointer-events:auto}
+.mini{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}.mini div{background:var(--bg);border-radius:12px;padding:10px 12px}.mini b{display:block;font:700 20px 'Bricolage Grotesque'}
+footer{color:var(--mut);font-size:12px;margin:18px 0}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+.dz{border:2px dashed var(--line);border-radius:14px;padding:16px;text-align:center;color:var(--mut)}body.drag{outline:3px dashed var(--acc);outline-offset:-8px}
+textarea{width:100%;height:90px;font:11px monospace;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0f1b2d;color:#fff;padding:10px 18px;border-radius:10px;display:none;z-index:20;max-width:90%}
+.days{display:flex;gap:3px;height:210px}.dcol{flex:1;min-width:7px;display:flex;flex-direction:column;border:0;background:none;padding:0;cursor:pointer;color:var(--mut);font:500 10px Figtree;text-align:center}
+.dcol .w{flex:1;display:flex;align-items:flex-end}.dcol i{display:block;width:100%;height:0;border-radius:5px 5px 0 0;transition:height .8s cubic-bezier(.2,.8,.2,1)}.dcol:hover i{filter:brightness(1.15)}
+.cl{width:26px;height:26px;border-radius:6px;margin:1.5px;font-size:10px;font-weight:600;color:#fff;display:flex;align-items:center;justify-content:center;transition:opacity .25s}
+.hm td{padding:0;border:0}.hm td.n{position:sticky;left:0;background:var(--card);padding:4px 12px 4px 0;cursor:pointer;z-index:1;white-space:nowrap}.hm th.n{position:sticky;left:0;z-index:2}
+.card h2+.sub{margin-top:-6px;margin-bottom:6px}.mini b{font-size:20px}header select{max-width:230px}label.btn{display:inline-block}
+</style></head><body><div class="wrap">
+<header><div><h1>Attendance Intelligence</h1><div class="sub" id="sub"></div></div><div class="tabs" id="tabs" role="tablist"></div>
+<div style="display:flex;gap:6px;flex-wrap:wrap"><select id="mon" aria-label="Month"></select><label class="btn">＋ Add month (.xlsx)<input id="file" type="file" accept=".xlsx,.xls" multiple hidden></label><button class="btn" id="th">Theme</button></div></header>
+<div id="top"><section class="card"><h2>Where the days went</h2><div class="sub">Each block is a status, sized by employee-days. Click one to spotlight it across the dashboard.</div><div id="rib"></div></section>
+<div class="kpis" id="kpis"></div><div class="card"><h2>Filter by employee</h2><div class="chips" id="chips"></div></div></div>
+<div id="body" style="margin-top:14px"></div>
+<footer>Source: your monthly attendance Excel files, stored in this browser. “A” days are split into Leave (from the sheet’s Leave column) and Absent. Incomplete punches count as present but get no hours or overtime. Overtime is taken from the Overtime column of your monthly sheet; if it is empty, it is calculated from punch times (time after off time + grace).</footer></div>
+<aside id="dr" aria-label="Detail"></aside><div id="sc"></div><div id="toast"></div>
+<script>const SEED={"months":{"2026-09":{"start":"2026-08-26","n":31,"ids":{"Ali Raza":2,"Faraz":3,"Humza":5,"Noman":6,"Farhan":7,"Rizwan":8,"Baber":9,"Gulam":10,"Huzaifa":13,"Ibaad":15,"Kamran":17,"Waseem":18,"Saud":19,"Daniyal":22},"recs":{"Ali Raza":["P:625.5:1036.0","P:625.5:1036.0","P:610.7:1019.0","P:610.7:1019.0","S","P:627.8:1041.0","P:610.7:1019.0","P:625.5:1036.0","P:610.7:1019.0","P:610.7:1019.0","X","X","P:625.5:1036.0","P:610.7:1079.0","P:610.7:1079.0","P:635.5:1036.0","P:600.7:1079.0","P:600.7:1079.0","S","P:549.1:1413.3","P:585.1:1353.3","P:569.1:1395.3","P:570.1:1353.3","P:609.1:1270.0","P:625.5:1310.0","S","P:631.8:1307.0","P:622.0:1299.0","P:634.6:1297.0","P:589.1:1336.9","A"],"Faraz":["P:589.1:1036.0","P:625.5:1036.0","P:612.0:1047.0","P:615.5:1026.0","S","P:627.8:1041.0","P:610.7:1019.0","P:625.5:1036.0","P:565.5:1076.0","P:625.5:1036.0","A","S","P:565.5:1076.0","P:625.5:1036.0","P:565.5:1076.0","P:615.5:1037.0","P:645.5:1050.0","P:610.7:1019.0","S","P:651.6:1318.0","P:604.4:1293.0","P:648.9:1311.0","P:586.9:1291.0","P:642.6:1315.0","P:591.7:1329.0","S","P:614.0:1304.0","P:636.0:1319.0","N","P:589.1:1310.0","A"],"Humza":["P:620.7:1079.0","P:625.5:1036.0","P:612.0:1013.0","P:598.6:1070.0","S","P:627.8:1041.0","P:645.7:1019.0","P:620.7:1079.0","P:610.7:1059.0","P:600.7:1070.0","A","S","P:610.7:1059.0","P:600.7:1070.0","P:590.7:1021.0","P:580.7:1032.0","P:570.7:1043.0","P:560.7:1054.0","S","P:644.0:1335.0","P:585.0:1333.0","P:577.2:1349.0","P:619.2:1342.0","P:581.1:1311.0","P:573.5:1329.0","S","P:591.8:1332.0","P:647.6:1339.0","P:591.8:1332.0","P:589.1:1330.0","A"],"Noman":["P:610.7:1079.0","P:625.5:1036.0","P:640.2:1053.0","P:594.9:1070.0","S","P:627.8:1041.0","P:610.7:1079.0","P:593.7:1017.0","P:576.7:1035.0","P:559.7:1073.0","A","S","P:627.8:1041.0","P:610.7:1019.0","P:593.7:1057.0","P:576.7:1035.0","P:559.7:1013.0","P:542.7:1051.0","S","P:655.1:1338.0","P:610.0:1322.0","P:598.8:1357.0","P:589.4:1318.0","P:622.5:1319.0","P:645.5:1356.0","S","P:600.1:1341.0","P:601.9:1357.0","P:593.7:1057.0","P:589.1:1352.0","A"],"Farhan":["P:593.7:1057.0","P:576.7:1035.0","P:559.7:1013.0","P:542.7:1051.0","S","P:627.8:1041.0","P:610.7:1019.0","P:593.7:1057.0","P:576.7:1035.0","P:559.7:1073.0","A","S","P:576.7:1035.0","P:559.7:1013.0","P:572.7:1051.0","P:645.6:1029.0","P:568.6:1067.0","P:611.6:1045.0","S","P:656.8:1334.0","P:624.1:1341.0","P:629.9:1346.0","P:648.3:1350.0","P:565.8:1351.0","P:590.2:1331.0","S","P:581.1:1324.0","P:631.6:1331.0","P:568.6:1067.0","P:589.1:1352.0","A"],"Rizwan":["P:610.7:1019.0","P:593.7:1057.0","P:576.7:1035.0","P:559.7:1073.0","S","P:627.8:1041.0","P:610.7:1019.0","P:610.7:1019.0","P:593.7:1057.0","P:576.7:1035.0","A","S","P:610.7:1019.0","P:612.7:1069.0","P:614.7:1059.0","P:616.7:1049.0","P:618.7:1039.0","P:620.7:1029.0","S","P:576.9:1342.0","P:577.4:1332.0","P:572.4:1332.0","P:546.5:1358.0","P:651.0:1351.0","P:595.3:1322.0","S","P:565.4:1349.0","P:633.8:1327.0","P:614.7:1059.0","P:589.1:1347.0","A"],"Baber":["P:614.7:1059.0","P:625.5:1036.0","P:576.2:1073.0","P:586.9:1050.0","S","P:627.8:1041.0","P:610.7:1019.0","P:593.7:997.0","P:576.7:1035.0","P:559.7:1073.0","A","S","P:614.7:1059.0","P:625.5:1036.0","P:636.2:1013.0","P:586.9:1050.0","P:597.6:1027.0","P:608.3:1064.0","S","P:656.1:1288.0","P:563.8:1270.0","P:641.0:1300.0","P:580.2:1296.0","P:636.1:1271.0","P:553.9:1277.0","S","P:639.2:1293.0","P:556.4:1292.0","N","P:589.1:1293.0","A"],"Gulam":["P:563.8:1022.0","P:587.9:1059.0","P:612.0:1036.0","P:636.2:1013.0","S","P:627.8:1041.0","P:610.7:1019.0","P:636.2:1013.0","P:586.9:1050.0","P:597.6:1027.0","A","S","P:627.8:1041.0","P:610.7:1019.0","P:636.2:1013.0","P:627.8:1041.0","P:610.7:1019.0","P:636.2:1013.0","S","P:577.5:1343.0","P:658.0:1346.0","P:623.4:1339.0","P:625.0:1351.0","P:650.0:1321.0","P:631.4:1360.0","S","P:601.1:1339.0","P:570.4:1333.0","P:610.7:1019.0","P:589.1:1328.0","A"],"Huzaifa":["P:610.7:1079.0","P:593.7:1057.0","P:627.8:1041.0","P:610.7:1079.0","S","P:627.8:1041.0","P:610.7:1019.0","P:627.8:1041.0","P:610.7:1019.0","P:636.2:1013.0","A","S","P:627.8:1041.0","P:610.7:1019.0","P:627.8:1041.0","P:610.7:1019.0","P:627.8:1041.0","P:610.7:1019.0","S","P:657.1:1196.0","P:629.5:1206.0","P:558.5:1197.0","P:624.7:1227.0","P:544.5:1219.0","P:645.7:1221.0","S","P:615.1:1222.0","P:645.9:1216.0","P:627.8:1041.0","P:589.1:1216.0","A"],"Ibaad":["P:627.8:1041.0","P:610.7:1019.0","P:627.8:1051.0","P:627.8:1045.0","S","P:627.8:1041.0","P:610.7:1019.0","P:610.7:1019.0","P:627.8:1051.0","P:627.8:1045.0","A","S","P:610.7:1019.0","P:627.8:1041.0","P:610.7:1019.0","P:620.7:1019.0","P:647.8:1051.0","P:610.7:1079.0","S","P:607.8:1393.0","P:617.1:1408.0","P:592.4:1391.0","P:608.0:1395.0","P:541.1:1376.0","P:591.6:1394.0","S","P:652.6:1404.0","P:650.4:1406.0","P:576.7:1035.0","P:589.1:1403.0","A"],"Kamran":["P:610.7:1079.0","P:593.7:1057.0","P:576.7:1035.0","P:559.7:1013.0","S","P:627.8:1041.0","P:610.7:1019.0","P:610.7:1079.0","P:593.7:1057.0","P:627.8:1041.0","A","S","P:610.7:1079.0","P:593.7:1057.0","P:576.7:1035.0","P:559.7:1013.0","P:542.7:1051.0","P:645.6:1029.0","S","P:543.0:1288.0","P:573.5:1282.0","P:613.2:1304.0","P:595.2:1308.0","P:542.8:1316.0","P:601.2:1294.0","S","P:567.5:1286.0","P:647.4:1277.0","P:565.5:1046.0","P:589.1:1315.0","A"],"Waseem":["P:615.5:1059.0","P:625.5:1036.0","P:565.5:1046.0","P:655.5:1059.0","S","P:627.8:1041.0","P:610.7:1019.0","P:593.7:1057.0","P:627.8:1041.0","P:541.8:1025.0","A","S","P:627.8:1041.0","P:610.7:1019.0","P:610.7:1079.0","P:593.7:1057.0","P:627.8:1041.0","P:610.7:1019.0","S","P:634.1:1253.0","P:651.8:1266.0","P:647.9:1230.0","P:633.4:1258.0","P:643.4:1268.0","P:622.1:1239.0","S","P:579.8:1266.0","P:586.7:1245.0","P:593.7:1057.0","P:589.1:1255.0","A"],"Saud":["P:565.5:1036.0","P:571.2:1059.0","P:577.0:1022.0","P:582.8:1045.0","S","P:627.8:1041.0","P:610.7:1019.0","P:610.7:1079.0","P:593.7:1057.0","P:576.7:1035.0","A","S","P:610.7:1079.0","P:593.7:1057.0","P:576.7:1035.0","P:559.7:1073.0","P:542.7:991.0","P:585.6:1029.0","S","P:547.9:1396.0","P:602.0:1405.0","P:558.9:1411.0","P:577.7:1416.0","P:638.9:1407.0","P:649.7:1413.0","S","P:557.5:1420.0","P:585.1:1416.0","P:593.7:1057.0","P:589.1:1436.0","A"],"Daniyal":["P:559.7:1073.0","P:565.5:1036.0","P:571.2:1059.0","P:577.0:1022.0","S","P:627.8:1041.0","P:610.7:1079.0","P:593.7:1057.0","P:576.7:1035.0","P:559.7:1013.0","A","S","P:610.7:1079.0","P:593.7:1057.0","P:576.7:1035.0","P:559.7:1013.0","P:542.7:1051.0","P:525.6:1029.0","S","P:572.1:1229.0","P:635.3:1238.0","P:615.1:1256.0","P:642.4:1236.0","P:652.4:1228.0","P:602.1:1258.0","S","P:551.4:1236.0","P:625.7:1230.0","P:576.7:1035.0","P:589.1:1249.0","A"]},"sum":{"Ali Raza":{"leave":0,"absent":0,"ot":42.25},"Faraz":{"leave":0,"absent":0,"ot":34.5},"Humza":{"leave":2,"absent":0,"ot":42.2},"Noman":{"leave":0,"absent":0,"ot":39},"Farhan":{"leave":0,"absent":0,"ot":39},"Rizwan":{"leave":0,"absent":0,"ot":39},"Baber":{"leave":2,"absent":2,"ot":31},"Gulam":{"leave":2,"absent":2,"ot":39},"Huzaifa":{"leave":2,"absent":2,"ot":20},"Daniyal":{"leave":2,"absent":2,"ot":24},"Kamran":{"leave":1,"absent":3,"ot":32.5},"Waseem":{"leave":0,"absent":1,"ot":26},"Saud":{"leave":0,"absent":0,"ot":50},"Ibaad":{"leave":0,"absent":0,"ot":47.5}},"set":{"off":1080,"grace":0}},"2026-10":{"start":"2026-09-26","n":30,"ids":{"Ali Raza":2,"Faraz":3,"Humza":5,"Noman":6,"Farhan":7,"Rizwan":8,"Baber":9,"Gulam":10,"Huzaifa":13,"Ibaad":15,"Kamran":17,"Waseem":18,"Saud":19,"Daniyal":22},"recs":{"Ali Raza":["P:595.6:1090.0","S","P:595.6:1090.0","P:603.4:1031.1","P:608.8:1176.8","P:583.2:1152.7","P:605.3:1050.6","A","S","P:550.8:1048.9","P:592.7:1080.4","P:603.4:1202.4","P:581.5:1080.4","P:624.3:1082.2","A","S","P:601.4:1356.6","P:581.5:1047.6","P:540.5:1027.8","P:591.1:1029.4","P:581.6:1043.6","P:608.8:1176.8","S","P:610.2:1197.7","P:583.9:1029.4","P:591.9:1042.9","P:670.0:1092.8","P:615.8:1078.2","P:591.1:1092.8","S"],"Faraz":["P:540.5:1064.8","S","P:595.5:1026.3","P:583.9:1029.4","P:627.2:1030.2","P:583.1:1036.3","A","A","S","P:572.0:1064.7","P:656.4:1074.7","P:596.2:1054.7","P:588.9:1020.0","P:608.1:1026.3","P:608.4:1074.7","S","P:597.5:1045.8","P:605.6:1047.6","P:611.0:1021.3","P:663.5:1029.0","P:603.4:1043.5","P:642.0:1028.9","S","P:589.6:1021.3","A","P:629.6:1044.5","A","P:605.6:1047.6","P:611.0:1021.3","S"],"Humza":["P:597.5:1045.8","S","A","P:639.3:1047.6","P:632.0:1027.8","P:661.4:1029.4","P:646.4:1065.6","P:643.6:1025.8","S","P:596.2:1054.7","P:588.9:1020.0","P:608.1:1026.3","P:596.2:1054.7","P:588.9:1020.0","P:651.9:1028.2","S","P:572.0:1019.9","P:574.0:1022.9","P:578.8:1092.5","P:572.0:1079.9","P:574.0:1042.8","P:578.8:1082.5","S","P:636.7:1027.8","P:624.7:1029.4","P:643.6:1043.6","P:559.9:1053.9","P:651.9:1028.2","P:588.9:1020.0","P:624.7:1089.5"],"Noman":["A","S","P:555.1:1026.6","P:601.5:1037.9","P:590.4:1022.1","P:544.0:1024.7","P:550.5:1037.9","A","S","P:577.4:1020.2","P:553.0:1032.0","P:559.9:1053.9","P:619.9:1020.2","P:560.3:1081.6","P:557.0:1056.5","S","P:600.1:1405.8","P:594.2:1384.9","P:583.7:1024.0","P:599.0:1024.5","P:576.0:1034.2","P:561.9:1113.3","S","P:568.4:1044.1","P:559.0:","P:572.0:1019.9","P:574.0:1022.9","P:578.8:1092.5","P:596.9:1040.6","S"],"Farhan":["P:566.7:1044.0","S","P:561.9:1026.3","P:583.7:1024.0","P:558.5:1022.4","P:589.6:1024.9","P:593.2:1037.6","P:563.7:1024.0","S","P:605.8:1020.0","P:574.2:1031.7","A","P:561.9:1020.3","P::785.6","P:576.7:1056.3","S","P:571.0:1406.3","P:595.2:1385.0","P:629.0:1024.0","P:583.7:1024.3","P:565.5:1034.3","P:556.4:1113.4","S","P:589.6:1024.9","P:593.2:1037.6","P:577.6:1020.2","P:583.4:1022.9","P:565.4:1092.8","P:583.7:1040.7","S"],"Rizwan":["A","S","P:562.0:1026.5","P:578.4:","P:558.6:1022.0","P:589.8:1024.5","P:593.4:1037.5","A","S","P:604.5:1055.8","P:574.2:1031.0","P:578.1:1020.0","P:562.0:1020.0","P:558.6:785.5","P:576.8:1055.8","S","P:571.1:1405.7","P:595.5:1384.7","P:629.1:1023.8","P:565.5:1092.6","P:565.8:1033.9","P:556.5:1112.2","S","P:555.2:1023.8","P:583.6:1060.5","P:578.1:1050.0","P:583.8:1022.6","P:565.5:1092.6","P:583.6:1040.5","S"],"Baber":["A","S","P:604.4:1026.4","P:617.4:1384.8","P:596.1:1022.4","P:596.2:1024.8","P:612.1:1037.6","A","S","P:585.8:1085.5","P:582.5:1031.5","P:598.0:1053.9","P:565.8:1021.9","P:596.1:1081.5","P:598.5:1056.2","S","P:616.0:1405.9","P:617.4:1384.8","P:614.3:1023.7","P:604.4:1024.1","P:617.4:1034.0","P:737.7:1113.2","S","P:604.8:1044.0","P:612.7:","P:591.2:1020.0","P:711.5:1022.7","P:707.5:1092.7","P:624.3:1040.5","S"],"Gulam":["P:558.5:1022.4","S","A","P:642.3:1000.0","P:588.9:1015.0","P:608.1:1026.3","P:629.9:1036.3","P:608.1:1026.3","S","P:534.3:1022.0","P:613.0:1262.9","P:623.9:1042.0","P:579.5:1047.0","P:608.0:1067.0","A","S","P:558.5:1022.4","P:589.6:1024.9","P:623.9:1042.0","P:579.5:1047.0","P:653.9:1047.0","P:619.8:1067.0","S","P:618.0:1198.2","P:625.5:1040.0","P:623.9:1042.0","P:550.8:1048.9","P:592.7:1080.4","A","S"],"Huzaifa":["A","S","A","A","A","P:661.1:1031.0","A","A","S","A","A","A","A","A","A","S","A","P:661.4:1029.4","P:646.4:1065.6","P:612.0:1077.8","P:661.4:1029.4","P:646.4:1065.6","S","A","P:661.1:1031.0","P:632.0:1027.8","P:661.4:1029.4","P:646.4:1065.6","P:612.0:1077.8","S"],"Ibaad":["P:578.9:1023.5","S","P:595.4:1090.1","P:584.0:","P:608.6:1176.7","P:583.2:1152.9","P:605.5:1050.2","A","S","P:572.0:1049.3","P:592.4:1107.4","P:596.4:1199.7","P:581.6:1080.5","P:608.1:1082.2","P:578.9:1023.5","S","P:597.5:1356.7","P:605.7:1047.7","P:605.7:1027.9","P:608.6:1176.7","P:581.6:1046.0","P:641.8:1012.5","S","P:590.0:1198.1","P:577.2:1047.7","P:591.9:1027.9","P:670.1:1176.7","P:615.8:1046.0","P:588.9:1020.0","S"],"Kamran":["P::1064.8","S","A","P:581.0:1047.7","P:615.9:1036.0","P:683.4:1152.8","P:553.0:1032.0","P:559.9:1053.9","S","P:611.5:1228.8","P:578.9:1023.5","P:599.0:1024.5","P:576.0:1034.2","P:561.9:1113.3","P:608.2:1040.9","S","A","P:576.0:1034.2","P:660.0:1024.5","P:561.9:1113.3","P:536.6:1093.3","P:628.3:1012.1","S","P:648.2:1033.8","P:705.2:1032.0","P:674.9:1021.7","P:662.4:1035.6","P:578.9:1023.5","P:662.4:1035.6","S"],"Waseem":["A","S","P:604.2:1026.8","P:711.5:1022.8","P:596.0:1022.2","P:596.1:1025.0","P:611.9:1037.8","P:582.5:1031.6","S","P:585.4:1020.1","P:582.5:1031.6","P:597.8:1054.0","P:565.5:1020.1","P::1081.5","P:598.5:1056.4","S","P:616.0:1405.9","P:617.2:1385.1","P:614.2:1023.8","P:596.1:1024.2","P:611.9:1034.1","P:737.8:1113.2","S","P:604.6:1044.0","P:612.5:1037.8","P:591.2:1020.3","P:711.5:1022.8","P:596.1:1025.0","P:624.0:1040.8","S"],"Saud":["A","S","P::1156.3","P:602.6:","P:619.0:1176.7","P:607.7:1152.7","P::1050.2","A","S","P:594.2:","P:571.9:","P::1199.5","P:567.6:1080.4","P:581.0:1081.7","P:758.6:1056.8","S","P:577.3:1356.6","P:607.5:1384.9","P::1031.4","P:556.1:1031.3","P::1046.0","P::1106.7","S","P:567.6:1154.4","P:569.1:","P:567.6:1055.3","P:589.8:1055.3","P:598.1:1094.2","P:600.1:1040.4","P:789.8:1089.9"],"Daniyal":["P:588.9:1102.3","S","P:596.2:1054.7","P:588.9:1020.0","A","P:661.1:1044.2","P:646.2:","A","S","A","P:670.4:1210.3","P:610.9:1096.2","P:652.5:1022.4","A","A","S","P::918.0","A","A","A","A","A","S","A","P:624.5:","P:642.8:1041.3","A","P:652.7:","A","S"]},"sum":{"Ali Raza":{"leave":2,"absent":0,"ot":35},"Faraz":{"leave":4,"absent":0,"ot":0},"Humza":{"leave":1,"absent":0,"ot":58},"Noman":{"leave":2,"absent":0,"ot":15},"Farhan":{"leave":1,"absent":0,"ot":15},"Rizwan":{"leave":2,"absent":0,"ot":15},"Baber":{"leave":2,"absent":0,"ot":15},"Gulam":{"leave":3,"absent":0,"ot":60},"Huzaifa":{"leave":0,"absent":12,"ot":45},"Ibaad":{"leave":0,"absent":1,"ot":40},"Kamran":{"leave":1,"absent":1,"ot":0},"Waseem":{"leave":0,"absent":1,"ot":15},"Saud":{"leave":0,"absent":0,"ot":45},"Daniyal":{"leave":0,"absent":12,"ot":45}},"set":{"off":1080,"grace":60}}}};
+const KEY='factory_att_v1',$=s=>document.querySelector(s);
+let DB=SEED,S={mo:null,tab:'ov',sel:new Set(),st:null,sort:['pct',-1],q:'',pv:[],cf:null};
+try{const s=localStorage.getItem(KEY);if(s)DB=JSON.parse(s)}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){toast('Browser storage unavailable – use the backup box in Data tab')}};
+const keys=()=>Object.keys(DB.months).sort(),cv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const D=(mo,i)=>new Date(Date.parse(mo.start)+i*864e5),iso=d=>d.toISOString().slice(0,10);
+const lab=k=>{const m=DB.months[k],d=D(m,m.n-1);return d.toLocaleDateString('en-GB',{month:'short',year:'numeric',timeZone:'UTC'})};
+const per=k=>{const m=DB.months[k],f={day:'numeric',month:'short',timeZone:'UTC'};return D(m,0).toLocaleDateString('en-GB',f)+' – '+D(m,m.n-1).toLocaleDateString('en-GB',f)};
+const tm=m=>{if(m==null)return '–';m=Math.round(m);return String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
+const f1=x=>(+x).toFixed(1),toast=t=>{const e=$('#toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',4500)};
+
+
+function calc(mo){const th=mo.set.off+mo.set.grace,E={},Q=[],T={P:0,M:0,A:0,L:0,S:0,X:0,N:0,ot:0,work:0,hs:0,hn:0};
+ const day=Array.from({length:mo.n},()=>({P:0,A:0,L:0,N:0}));
+ for(const [nm,rec] of Object.entries(mo.recs)){
+  const r={nm,id:mo.ids[nm],P:0,M:0,A:0,L:0,S:0,X:0,N:0,ot:0,hs:0,hn:0,si:0,ni:0,so:0,no:0,days:[]};
+  rec.forEach((c,ix)=>{const [k,i,o]=c.split(':'),d={k},ds=iso(D(mo,ix));
+   if(k==='P'){const a=i===''?null:+i,b=o===''?null:+o;r.P++;d.i=a;d.o=b;
+    if(a==null||b==null){r.M++;d.k='M';Q.push({t:'Incomplete punch',nm,d:ds,m:(a==null?'Time In':'Time Out')+' missing – OT/hours not computed'})}
+    if(a!=null){r.si+=a;r.ni++}
+    if(b!=null){r.so+=b;r.no++;d.ot=Math.max(0,b-th);r.ot+=d.ot}
+    if(a!=null&&b!=null){let h=b-a;if(h<0)h+=1440;r.hs+=h;r.hn++}
+   }else{r[k]++;if(k==='N')Q.push({t:'No record',nm,d:ds,m:'Row empty or unrecognised code'})}
+   r.days.push(d);const q=day[ix];if(k==='P')q.P++;else if(k in q)q[k]++});
+  r.rawA=r.A;const sm=mo.sum[nm],lv=Math.min(sm?sm.leave:0,r.A);r.L+=lv;r.A-=lv;r.ot/=60;r.otp=r.ot;
+  if(sm&&sm.ot!=null){r.ot=sm.ot;if(Math.abs(sm.ot-r.otp)>1)Q.push({t:'Overtime differs',nm,d:'',m:`Sheet overtime ${sm.ot} h (used in dashboard) vs ${r.otp.toFixed(1)} h calculated from punch times`})}
+  
+  if(sm&&sm.leave+sm.absent!==r.rawA)Q.push({t:'Summary mismatch',nm,d:'',m:`Sheet summary says Leave ${sm.leave} + Absent ${sm.absent}; daily rows show ${r.rawA} “A” days`});
+  r.work=r.P+r.A+r.L+r.N;r.pct=r.work?r.P/r.work*100:0;r.hrs=r.hn?r.hs/r.hn/60:0;r.ain=r.ni?r.si/r.ni:null;r.aout=r.no?r.so/r.no:null;E[nm]=r;
+  for(const x of ['P','M','A','L','S','X','N','ot','work','hs','hn'])T[x]+=r[x]}
+ T.pct=T.work?T.P/T.work*100:0;T.hrs=T.hn?T.hs/T.hn/60:0;T.emps=Object.keys(E).length;return{E,T,Q,day}}
+
+
+function data(k){const c=cOf(k),ks=keys();
+ const rows=ks.map(x=>{const m=DB.months[x];return `<tr><td><b>${lab(x)}</b></td><td>${per(x)}</td><td>${Object.keys(m.recs).length}</td><td>Off <input type="time" value="${tm(m.set.off)}" onchange="setS('${x}',this.value,null)" style="width:100px"></td><td>OT after +<input type="number" min="0" step="0.25" value="${m.set.grace/60}" onchange="setS('${x}',null,this.value)" style="width:70px"> h</td><td><button onclick="del('${x}')">Delete</button></td></tr>`}).join('');
+ const q=c.Q.map(x=>`<tr><td>${x.t}</td><td>${x.nm}</td><td>${x.d}</td><td style="text-align:left;white-space:normal">${x.m}</td></tr>`).join('')||'<tr><td colspan=4>No issues 🎉</td></tr>';
+ return `<div class="card dz" style="margin-bottom:14px"><b>Monthly update:</b> drag &amp; drop (or use “Add monthly Excel”) the new month’s file. Each month is stored separately and nothing older is touched; re-adding a month replaces only that month.</div>
+ <div class="card sc" style="margin-bottom:14px"><h3>Stored months</h3><table><tr><th>Month</th><th>Period</th><th>Employees</th><th>Off time</th><th>Overtime rule</th><th></th></tr>${rows}</table><p style="color:var(--mut)">Overtime shown on the dashboard is the figure typed in your sheet’s Overtime column. The off time and grace rule below only fills in overtime when that cell is empty, and drives the punch-based cross-check.</p></div>
+ <div class="card sc" style="margin-bottom:14px"><h3>Data-quality checks · ${lab(k)}</h3><table><tr><th>Issue</th><th>Employee</th><th>Date</th><th>Detail</th></tr>${q}</table></div>
+ <div class="card"><h3>Backup &amp; restore (all months)</h3><button onclick="bk()">Show / copy backup</button> <button onclick="rs()">Restore from box</button><textarea id="bx" placeholder="Backup JSON appears here. Paste a saved backup and press Restore to load it."></textarea></div>`}
+
+
+function setS(k,t,g){const m=DB.months[k];if(t){const[a,b]=t.split(':');m.set.off=+a*60+ +b}if(g!=null)m.set.grace=Math.round(+g*60);save();render()}
+function bk(){const b=$('#bx');b.value=JSON.stringify(DB);b.select();try{navigator.clipboard.writeText(b.value);toast('Backup copied – paste it into a safe file')}catch(e){}}
+function rs(){try{const d=JSON.parse($('#bx').value);if(!d.months)throw 0;DB=d;save();S.mo=keys().pop();render();toast('Backup restored')}catch(e){toast('That does not look like a valid backup')}}
+/* ---------- Excel import ---------- */
+function code(i,o){const n=x=>typeof x==='number',m=x=>n(x)?+(x%1*1440).toFixed(1):'';
+ if(n(i)||n(o))return 'P:'+m(i)+':'+m(o);const s=String(i||o||'').trim();if(!s)return 'N';
+ if(/^sun/i.test(s))return 'S';if(/^a(bs|$)/i.test(s))return 'A';if(/^l(eave|$)/i.test(s))return 'L';if(/shut|holi|off|^ph$|clos/i.test(s))return 'X';return 'N'}
+async function parse(f){const wb=XLSX.read(await f.arrayBuffer(),{type:'array'}),a=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null});
+ const h=a.findIndex(r=>String(r[0]).trim().toLowerCase()==='id'&&/date/i.test(r[2]));if(h<0)throw new Error('headers ID / Name / Date / Time In / Time Out not found');
+ const rows=a.slice(h+1).filter(r=>typeof r[0]==='number'&&typeof r[2]==='number'),nm=r=>String(r[1]).trim();
+ const names=[...new Set(rows.map(nm))],ds=rows.map(r=>Math.floor(r[2])),d0=Math.min(...ds),n=Math.max(...ds)-d0+1,recs={},ids={};
+ names.forEach(x=>recs[x]=Array(n).fill('N'));rows.forEach(r=>{ids[nm(r)]=r[0];recs[nm(r)][Math.floor(r[2])-d0]=code(r[3],r[4])});
+ const c=a[h].indexOf('Leave'),sum={};if(c>0)a.slice(h+1).forEach(r=>{const x=typeof r[c-1]==='string'&&r[c-1].trim();if(x&&recs[x])sum[x]={leave:+r[c]||0,absent:+r[c+1]||0,ot:typeof r[c+2]==='number'?r[c+2]:null}});
+ const set={off:1080,grace:0};a.forEach(r=>{const l=r.find(x=>typeof x==='string'&&/^(off time|ot starts)/i.test(x)),v=[...r].reverse().find(x=>typeof x==='number'&&x>0&&x<1);
+  if(l&&v!=null){if(/^off/i.test(l))set.off=Math.round(v*1440);else set.grace=Math.round(v*1440)}});
+ const start=new Date((d0-25569)*864e5),end=new Date((d0+n-1-25569)*864e5);
+ return{key:end.toISOString().slice(0,7),mo:{start:start.toISOString().slice(0,10),n,ids,recs,sum,set}}}
+async function add(files){for(const f of files){try{const{key,mo}=await parse(f),had=DB.months[key];DB.months[key]=mo;save();S.mo=key;toast(`${had?'Updated':'Added'} ${lab(key)} – ${Object.keys(mo.recs).length} employees, ${mo.n} days`)}catch(e){toast(`${f.name}: ${e.message}`)}}render()}
+$('#file').onchange=e=>{add([...e.target.files]);e.target.value=''};
+addEventListener('dragover',e=>{e.preventDefault();document.body.classList.add('drag')});addEventListener('dragleave',e=>{if(!e.relatedTarget)document.body.classList.remove('drag')});
+addEventListener('drop',e=>{e.preventDefault();document.body.classList.remove('drag');add([...e.dataTransfer.files])});
+
+
+const $$=s=>document.querySelectorAll(s),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const PAL=['#0b7a75','#e0a030','#3b6fd4','#d0533f','#7a5ac8','#2fa36b','#c2417c','#6b8e23','#d98324','#4a90a4'];
+const COL={P:'#2fa36b',M:'#3b9fd4',A:'#d0533f',L:'#e0a030',S:'#a5b1c2',X:'#7a5ac8',N:'#5d6b7e'};
+const ST={P:'Present',M:'Incomplete punch',A:'Absent',L:'Leave',S:'Weekly off',X:'Shutdown / holiday',N:'No record'};
+const mot=!matchMedia('(prefers-reduced-motion:reduce)').matches;
+const cOf=k=>calc(DB.months[k]),prevOf=k=>{const a=keys(),i=a.indexOf(k);return i>0?a[i-1]:null};
+const NM=()=>[...new Set(keys().flatMap(k=>Object.keys(DB.months[k].recs)))],colr=n=>PAL[Math.max(0,NM().indexOf(n))%10];
+const agg=E=>{const T={P:0,M:0,A:0,L:0,S:0,X:0,N:0,ot:0,work:0,hs:0,hn:0};E.forEach(r=>{for(const x in T)T[x]+=r[x]});T.pct=T.work?T.P/T.work*100:0;T.hrs=T.hn?T.hs/T.hn/60:0;return T};
+const sel=E=>S.sel.size?E.filter(r=>S.sel.has(r.nm)):E;
+function view(){const k=S.mo,mo=DB.months[k],c=calc(mo),all=Object.values(c.E);all.forEach(r=>r.off=r.S+r.X);const E=sel(all);return{k,mo,c,all,E,T:agg(E)}}
+const stats=T=>[['P',T.P-T.M],['M',T.M],['A',T.A],['L',T.L],['S',T.S],['X',T.X],['N',T.N]].filter(x=>x[1]>0);
+const fmt=(d,o)=>d.toLocaleDateString('en-GB',Object.assign({timeZone:'UTC'},o));
+const dayStats=V=>Array.from({length:V.mo.n},(_,i)=>{let p=0,n=0,o=0;V.E.forEach(r=>{const k=r.days[i].k;n++;if(k==='P'||k==='M')p++;else if(k==='S'||k==='X')o++});const d=D(V.mo,i);return{i,p,n,off:n>0&&o===n,lbl:fmt(d,{weekday:'short',day:'numeric',month:'short'}),dn:d.getUTCDate(),w:d.toLocaleDateString('en',{weekday:'narrow',timeZone:'UTC'})}});
+function count(el,to,from){const d=+el.dataset.d,s=el.dataset.s,f=v=>v.toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g,',')+s;if(!mot){el.textContent=f(to);return}const t0=performance.now();(function g(t){const p=Math.min(1,(t-t0)/700),e=1-Math.pow(1-p,3);el.textContent=f(from+(to-from)*e);if(p<1)requestAnimationFrame(g)})(t0)}
+function kpis(V){const pk=prevOf(V.k),pT=pk&&agg(sel(Object.values(cOf(pk).E))),T=V.T;
+ const k=[['Attendance rate',T.pct,'%',1,pT&&pT.pct],['Present days',T.P,'',0,pT&&pT.P],['Absent days',T.A,'',0,pT&&pT.A],['Leave days',T.L,'',0,pT&&pT.L],['Overtime hours',T.ot,' h',1,pT&&pT.ot],['Avg hours / day',T.hrs,' h',1,pT&&pT.hrs]];
+ $('#kpis').innerHTML=k.map(x=>`<div class="card kpi"><div class="l">${x[0]}</div><div class="big kv" data-s="${x[2]}" data-d="${x[3]}">0</div><div class="d">${x[4]==null?(S.sel.size?'filtered view':'first month on record'):(x[1]>=x[4]?'▲ ':'▼ ')+Math.abs(x[1]-x[4]).toFixed(x[3])+x[2]+' vs '+lab(pk)}</div></div>`).join('');
+ $$('#kpis .kv').forEach((e,i)=>{count(e,k[i][1],S.pv[i]||0);S.pv[i]=k[i][1]})}
+function ribbon(V){const g=stats(V.T),t=g.reduce((a,x)=>a+x[1],0)||1;$('#rib').innerHTML=g.map(([k,v])=>`<button class="seg ${S.st&&S.st!==k?'dim':''}" data-s="${k}" style="background:${COL[k]};flex-grow:0" data-g="${v/t*100}" title="${ST[k]}: ${v} days"><b>${v/t>.06?ST[k]:''}</b>${v/t>.09?v+' days':''}</button>`).join('');requestAnimationFrame(()=>$$('.seg').forEach(s=>s.style.flexGrow=s.dataset.g))}
+function chips(V){$('#chips').innerHTML=`<button class="chip ${S.sel.size?'':'on'}" data-n="">All<i>${V.all.length}</i></button>`+V.all.map(r=>`<button class="chip ${S.sel.has(r.nm)?'on':''}" data-n="${esc(r.nm)}"><span class="dot" style="background:${colr(r.nm)};margin-right:5px"></span>${esc(r.nm)}<i>${f1(r.pct)}%</i></button>`).join('')}
+function donut(V){const g=stats(V.T),t=g.reduce((a,x)=>a+x[1],0)||1,C=2*Math.PI*80;let o=0;S.dn={g,t};
+ $('#don').innerHTML=g.map(([k,v])=>{const l=v/t*C,h=`<circle cx="100" cy="100" r="80" stroke="${COL[k]}" data-s="${k}" data-l="${l}" stroke-dasharray="0 ${C}" stroke-dashoffset="${-o}" opacity="${S.st&&S.st!==k?.25:1}"><title>${ST[k]}: ${v} days</title></circle>`;o+=l;return h}).join('');
+ requestAnimationFrame(()=>$$('#don circle').forEach(c=>c.setAttribute('stroke-dasharray',`${Math.max(0,c.dataset.l-1.5)} ${C}`)));ctr()}
+function ctr(k){const d=S.dn;if(!d)return;const x=k&&d.g.find(a=>a[0]===k);$('#dc').innerHTML=x?`<div class="big" style="font-size:22px">${(x[1]/d.t*100).toFixed(1)}%</div><div>${ST[k]}</div><div class="sub">${x[1]} days</div>`:`<div class="big" style="font-size:22px">${d.t}</div><div class="sub">employee-days<br>hover a slice</div>`}
+function bars(el,items,f){const m=Math.max(...items.map(i=>i.v),1);$(el).innerHTML=items.map(i=>`<div class="bar" ${i.n?`data-n="${esc(i.n)}" style="cursor:pointer"`:''}><span class="n" title="${esc(i.k)}">${esc(i.k)}</span><span class="t"><span class="f" data-w="${i.v/m*100}" style="display:block;${i.c?'background:'+i.c:''}"></span></span><b>${f(i.v)}</b></div>`).join('')||'<div class="sub">No data for this filter.</div>';requestAnimationFrame(()=>$$(el+' .f').forEach(x=>x.style.width=x.dataset.w+'%'))}
+function insights(V){const E=V.E,T=V.T,i=[];if(!E.length){$('#ins').innerHTML='';return}
+ const by=[...E].sort((a,b)=>b.pct-a.pct),w=by[by.length-1],perf=E.filter(r=>r.pct>=100).length,top=[...E].sort((a,b)=>b.ot-a.ot)[0],dd=dayStats(V).filter(d=>!d.off).sort((a,b)=>a.p/a.n-b.p/b.n)[0];
+ i.push(['',`Attendance is <b>${f1(T.pct)}%</b>. <b>${esc(by[0].nm)}</b> leads at ${f1(by[0].pct)}%${perf?`; ${perf} ${perf>1?'employees have':'employee has'} perfect attendance`:''}.`]);
+ if(w.pct<100)i.push([w.pct<75?'b':'w',`<b>${esc(w.nm)}</b> has the lowest attendance, ${f1(w.pct)}% (${w.A} absent, ${w.L} leave).`]);
+ if(top.ot>0)i.push(['',`<b>${esc(top.nm)}</b> worked the most overtime: ${f1(top.ot)} h of ${f1(T.ot)} h.`]);
+ if(dd)i.push(['w',`Lowest turnout: <b>${dd.lbl}</b>, ${dd.p} of ${dd.n} present.`]);
+ if(T.M)i.push(['w',`${T.M} day(s) have a missing Time In or Out. See Data tab.`]);if(T.N)i.push(['b',`${T.N} day(s) have no record at all.`]);
+ const hi=E.filter(r=>r.A>=3);if(hi.length)i.push(['b',`${hi.map(r=>esc(r.nm)).join(', ')}: 3 or more absences.`]);
+ $('#ins').innerHTML=i.map(x=>`<div class="ins ${x[0]}"><span></span><div>${x[1]}</div></div>`).join('')}
+function daily(V){$('#days').innerHTML=dayStats(V).map(d=>{const f=d.n?d.p/d.n:0,c=d.off?'var(--line)':f<.75?'var(--bad)':f<.9?'var(--warn)':'var(--acc)';return `<button class="dcol" data-i="${d.i}" title="${d.lbl}: ${d.off?'weekly off / shutdown':d.p+' of '+d.n+' present'}"><span class="w"><i data-h="${d.off?4:Math.max(f*100,3)}" style="background:${c}"></i></span><span>${d.dn}</span><span>${d.w}</span></button>`}).join('');requestAnimationFrame(()=>$$('.dcol i').forEach(i=>i.style.height=i.dataset.h+'%'))}
+function tbl(V){const[c,dir]=S.sort,q=S.q.toLowerCase(),r=V.E.filter(x=>!q||x.nm.toLowerCase().includes(q));r.sort((a,b)=>(typeof a[c]==='string'?a[c].localeCompare(b[c]):(a[c]??-1)-(b[c]??-1))*dir);
+ const H=[['nm','Employee'],['P','Present'],['A','Absent'],['L','Leave'],['off','Off days'],['ot','OT hrs'],['ain','Avg in'],['aout','Avg out'],['hrs','Avg hrs/day'],['pct','Attendance']];
+ $('#tb').innerHTML='<tr>'+H.map(([k,l])=>`<th data-c="${k}" class="${k==='nm'?'':'num'}">${l}${c===k?(dir>0?' ▲':' ▼'):''}</th>`).join('')+'</tr>'+r.map(x=>`<tr class="click" data-n="${esc(x.nm)}" tabindex="0"><td><span class="dot" style="background:${colr(x.nm)}"></span>${esc(x.nm)} <span class="tag">#${x.id}</span></td><td class="num">${x.P}</td><td class="num ${x.A?'neg':''}">${x.A}</td><td class="num">${x.L}</td><td class="num">${x.off}</td><td class="num">${f1(x.ot)}</td><td class="num">${tm(x.ain)}</td><td class="num">${tm(x.aout)}</td><td class="num">${f1(x.hrs)}</td><td class="num"><span class="share" style="width:${x.pct*.6}px;background:${x.pct>=90?COL.P:x.pct>=75?COL.L:COL.A}"></span>${f1(x.pct)}%</td></tr>`).join('');$('#cnt').textContent=r.length+' employees'}
+function overview(V){$('#body').innerHTML=`<div class="grid"><div class="card c4"><h2>Share of days</h2><div class="donutw"><svg id="don" viewBox="0 0 200 200"></svg><div class="dc" id="dc"></div></div></div>
+<div class="card c4"><h2>${S.st?ST[S.st]+' days':'Attendance rate'} by employee</h2><div class="sub">Click a name for the full profile.</div><div id="abar"></div></div>
+<div class="card c4"><h2>Insights</h2><div id="ins"></div></div>
+<div class="card c7"><h2>Daily turnout</h2><div class="sub">Share of employees present each day. Click a day to see who was in.</div><div class="days" id="days" style="margin-top:12px"></div></div>
+<div class="card c5"><h2>Overtime by employee</h2><div id="obar"></div></div>
+<div class="card c12"><h2>Employee summary</h2><div class="tools"><input id="q" type="search" placeholder="Search employee" size="24" value="${esc(S.q)}"><span class="sub" id="cnt"></span></div><div class="scroll" style="max-height:520px"><table id="tb"></table></div></div></div>`;
+ const st=S.st;donut(V);bars('#abar',[...V.E].sort((a,b)=>st?b[st]-a[st]:b.pct-a.pct).map(r=>({k:r.nm,n:r.nm,v:st?r[st]:r.pct,c:st?COL[st]:r.pct>=90?COL.P:r.pct>=75?COL.L:COL.A})),v=>st?v+' d':f1(v)+'%');
+ bars('#obar',[...V.E].sort((a,b)=>b.ot-a.ot).map(r=>({k:r.nm,n:r.nm,v:r.ot,c:'#7a5ac8'})),v=>f1(v)+' h');insights(V);daily(V);tbl(V)}
+function mat(V){const mo=V.mo,hd=Array.from({length:mo.n},(_,i)=>{const d=D(mo,i);return `<th style="cursor:default;text-align:center;padding:4px 0"><small>${d.toLocaleDateString('en',{weekday:'short',timeZone:'UTC'}).slice(0,2)}</small><br>${d.getUTCDate()}</th>`}).join('');
+ return `<div class="card"><h2>Daily attendance matrix</h2><div class="sub">Every employee, every day. Hover a cell for punch times; click a name for the profile. Click a status in the ribbon above to spotlight it.</div><div class="scroll" style="margin-top:10px"><table class="hm"><tr><th class="n" style="cursor:default">Employee</th>${hd}<th class="num" style="cursor:default">Days</th></tr>${V.E.map(r=>`<tr><td class="n" data-n="${esc(r.nm)}"><span class="dot" style="background:${colr(r.nm)}"></span><b>${esc(r.nm)}</b></td>${r.days.map((d,i)=>`<td><div class="cl" style="background:${COL[d.k]};opacity:${S.st&&S.st!==d.k?.15:1}" title="${esc(r.nm)} · ${D(mo,i).toUTCString().slice(0,11)} · ${ST[d.k]}${d.i!=null||d.o!=null?' · '+tm(d.i)+' → '+tm(d.o):''}">${d.k==='A'?'A':d.k==='L'?'L':''}</div></td>`).join('')}<td class="num"><b>${r.P}</b>/${r.work}</td></tr>`).join('')}</table></div></div>`}
+function trend(){const ks=keys(),cs=ks.map(k=>{const E=sel(Object.values(cOf(k).E));return{k,E,T:agg(E)}}),names=NM().filter(n=>!S.sel.size||S.sel.has(n)),hue=p=>`hsl(${Math.max(0,(p-50)/50)*125} 60% 40%)`;
+ setTimeout(()=>{bars('#t1',cs.map(c=>({k:lab(c.k),v:c.T.pct})),v=>f1(v)+'%');bars('#t2',cs.map(c=>({k:lab(c.k),v:c.T.ot,c:'#7a5ac8'})),v=>f1(v)+' h');bars('#t3',cs.map(c=>({k:lab(c.k),v:c.T.A+c.T.L,c:COL.A})),v=>v+' days')},0);
+ return `<div class="grid"><div class="card c4"><h2>Attendance rate by month</h2><div id="t1"></div></div><div class="card c4"><h2>Overtime hours by month</h2><div id="t2"></div></div><div class="card c4"><h2>Absent + leave days by month</h2><div id="t3"></div></div>
+<div class="card c12"><h2>Attendance % · every employee, every month</h2><div class="sub">Pick employees with the chips on the Overview tab to narrow this list.</div><div class="scroll"><table><tr><th>Employee</th>${ks.map(k=>`<th class="num">${lab(k)}</th>`).join('')}</tr>${names.map(n=>`<tr class="click" data-n="${esc(n)}"><td><span class="dot" style="background:${colr(n)}"></span>${esc(n)}</td>${cs.map(c=>{const r=c.E.find(x=>x.nm===n);return r?`<td class="num"><span class="tag" style="background:${hue(r.pct)};color:#fff">${f1(r.pct)}%</span></td>`:'<td class="num">–</td>'}).join('')}</tr>`).join('')}</table></div></div></div>`}
+const open=()=>{$('#dr').classList.add('open');$('#sc').classList.add('open');$('#x').focus()},closeD=()=>{$('#dr').classList.remove('open');$('#sc').classList.remove('open')};
+const cell=(d,i,mo)=>`<div class="cl" style="background:${COL[d.k]}" title="${D(mo,i).toUTCString().slice(0,11)} · ${ST[d.k]}${d.i!=null||d.o!=null?' · '+tm(d.i)+' → '+tm(d.o):''}${d.ot?' · after-hours '+f1(d.ot/60)+' h':''}">${D(mo,i).getUTCDate()}</div>`;
+function drawer(n){const k=S.mo,mo=DB.months[k],c=cOf(k),r=c.E[n];if(!r)return;const hist=keys().map(x=>({x,r:cOf(x).E[n]})).filter(h=>h.r),q=c.Q.filter(x=>x.nm===n);
+ $('#dr').innerHTML=`<button class="btn" id="x" style="float:right">Close</button><h2 style="font-size:24px"><span class="dot" style="background:${colr(n)}"></span>${esc(n)}</h2><div class="sub">ID #${r.id} · ${lab(k)} (${per(k)})</div>
+<div class="mini"><div>Attendance<b>${f1(r.pct)}%</b></div><div>Present days<b>${r.P}</b></div><div>Absent / Leave<b>${r.A} / ${r.L}</b></div><div>Overtime (sheet)<b>${f1(r.ot)} h</b></div><div>Avg check-in<b>${tm(r.ain)}</b></div><div>Avg check-out<b>${tm(r.aout)}</b></div></div>
+<h3>Day by day</h3><div style="display:flex;flex-wrap:wrap;margin:8px 0">${r.days.map((d,i)=>cell(d,i,mo)).join('')}</div><div class="sub">${Object.keys(ST).map(x=>`<span style="margin-right:10px"><span class="dot" style="background:${COL[x]};margin-right:4px"></span>${ST[x]}</span>`).join('')}</div>
+<h3 style="margin:16px 0 6px">Attendance by month</h3><div id="dh"></div>
+<h3 style="margin:16px 0 6px">Flagged issues</h3>${q.map(x=>`<div class="ins w"><span></span><div><b>${x.t}</b> ${x.d}<br>${x.m}</div></div>`).join('')||'<div class="sub">None this month.</div>'}`;
+ bars('#dh',hist.map(h=>({k:lab(h.x),v:h.r.pct})),v=>f1(v)+'%');open()}
+function dayDr(i){const V=view(),mo=V.mo,d=D(mo,i),cnt={};V.E.forEach(r=>{const k=r.days[i].k;cnt[k]=(cnt[k]||0)+1});
+ $('#dr').innerHTML=`<button class="btn" id="x" style="float:right">Close</button><h2 style="font-size:24px">${fmt(d,{weekday:'long',day:'numeric',month:'long'})}</h2><div class="sub">${Object.entries(cnt).map(([k,v])=>`${v} ${ST[k].toLowerCase()}`).join(' · ')}</div><div class="scroll" style="margin-top:12px"><table><tr><th>Employee</th><th>Status</th><th class="num">In</th><th class="num">Out</th><th class="num">After-hours</th></tr>${V.E.map(r=>{const x=r.days[i];return `<tr><td>${esc(r.nm)}</td><td><span class="dot" style="background:${COL[x.k]}"></span>${ST[x.k]}</td><td class="num">${tm(x.i)}</td><td class="num">${tm(x.o)}</td><td class="num">${x.ot?f1(x.ot/60)+' h':'–'}</td></tr>`}).join('')}</table></div>`;open()}
+function del(k){if(S.cf!==k){S.cf=k;toast('Click Delete again to remove '+lab(k)+' permanently');return}S.cf=null;delete DB.months[k];save();S.mo=keys().pop()||null;render()}
+function render(){const ks=keys();if(!ks.length){$('#body').innerHTML='<div class="card dz">No data yet. Add your first monthly Excel file.</div>';$('#top').style.display='none';return}
+ if(!S.mo||!DB.months[S.mo])S.mo=ks[ks.length-1];
+ $('#mon').innerHTML=ks.map(k=>`<option value="${k}" ${k===S.mo?'selected':''}>${lab(k)} (${per(k)})</option>`).join('');
+ const V=view(),T=V.T;$('#sub').textContent=`${V.all.length} employees · ${per(S.mo)} · ${ks.length} month${ks.length>1?'s':''} of history`;
+ $('#tabs').innerHTML=[['ov','Overview',`${f1(T.pct)}% attendance`],['mat','Daily matrix',`${V.E.length} employees × ${V.mo.n} days`],['tr','Trends',`${ks.length} month${ks.length>1?'s':''}`],['dat','Data & settings','import · backup']].map(([t,n,s])=>`<button class="tab ${t===S.tab?'on':''}" data-tab="${t}">${n}<small>${s}</small></button>`).join('');
+ const top=S.tab==='ov'||S.tab==='mat';$('#top').style.display=top?'':'none';if(top){kpis(V);ribbon(V);chips(V)}
+ if(S.tab==='ov')overview(V);else $('#body').innerHTML=S.tab==='mat'?mat(V):S.tab==='tr'?trend():data(S.mo).replace(/card sc/g,'card scroll')}
+document.addEventListener('click',e=>{const t=e.target.closest('.chip,.seg,#don circle,.dcol,.bar[data-n],tr.click,td.n,th[data-c],[data-tab],#x,#sc');if(!t)return;
+ if(t.dataset.tab){S.tab=t.dataset.tab;render()}
+ else if(t.matches('.chip')){const n=t.dataset.n;n===''?S.sel.clear():S.sel.has(n)?S.sel.delete(n):S.sel.add(n);render()}
+ else if(t.matches('.seg,circle')){S.st=S.st===t.dataset.s?null:t.dataset.s;render()}
+ else if(t.matches('.dcol'))dayDr(+t.dataset.i);
+ else if(t.matches('.bar,tr.click,td.n'))drawer(t.dataset.n);
+ else if(t.matches('th')){const c=t.dataset.c;S.sort=S.sort[0]===c?[c,-S.sort[1]]:[c,c==='nm'?1:-1];tbl(view())}
+ else closeD()});
+document.addEventListener('input',e=>{if(e.target.id==='q'){S.q=e.target.value;tbl(view())}});
+document.addEventListener('mouseover',e=>{const c=e.target.closest('#don circle');ctr(c?c.dataset.s:null)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();if(e.key==='Enter'&&e.target.matches('tr.click'))drawer(e.target.dataset.n)});
+$('#mon').onchange=e=>{S.mo=e.target.value;S.pv=[];render()};
+$('#th').onclick=()=>{const r=document.documentElement,d=getComputedStyle(r).colorScheme=='dark';r.dataset.theme=d?'light':'dark'};
+render();
+</script>
+<script>
+(function(){
+  function sendStats(){
+    try {
+      const ks = keys();
+      if (!ks.length) return;
+      const latest = ks[ks.length - 1];
+      const c = cOf(latest);
+      const emps = Object.values(c.E);
+      const T = agg(emps);
+      window.parent.postMessage({
+        type: "ifl-stats",
+        module: "attendance",
+        stats: {
+          monthKey: latest,
+          monthLabel: lab(latest),
+          period: per(latest),
+          monthsCount: ks.length,
+          employees: emps.length,
+          pct: T.pct,
+          present: T.P,
+          absent: T.A,
+          leave: T.L,
+          ot: T.ot,
+          avgHrs: T.hrs,
+          issues: c.Q.length,
+          incomplete: T.M,
+          highAbsence: emps.filter(e => e.A >= 3).map(e => ({ name: e.nm, absent: e.A, pct: e.pct })),
+          topWatch: [...emps].sort((a,b) => b.ot - a.ot).slice(0, 6).map(e => ({ name: e.nm, present: e.P, absent: e.A, ot: e.ot, pct: e.pct }))
+        }
+      }, "*");
+    } catch(e){}
+  }
+  
+  try {
+    const _setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(k, v) {
+      _setItem.call(this, k, v);
+      setTimeout(sendStats, 20);
+    };
+  } catch(e) {}
+
+  window.addEventListener("message", e => {
+    if (!e.data) return;
+    if (e.data.type === "ifl-theme") {
+      document.documentElement.dataset.theme = e.data.theme;
+    } else if (e.data.type === "ifl-ping") {
+      sendStats();
+    } else if (e.data.type === "ifl-action" && e.data.tab) {
+      S.tab = e.data.tab; render();
+    }
+  });
+  sendStats();
+})();
+</script>
+</body></html>

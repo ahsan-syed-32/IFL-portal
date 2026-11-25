@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IFL Management Portal — International Furniture Pvt. Ltd.</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="modules/portal-seeds.js"></script>
+<style>
+:root {
+  --bg: #eef2f6;
+  --card: #ffffff;
+  --ink: #0f1b2d;
+  --mut: #5d6b7e;
+  --line: #dbe3ec;
+  --acc: #0b7a75;
+  --acc-soft: rgba(11, 122, 117, 0.11);
+  --bad: #d0533f;
+  --bad-soft: rgba(208, 83, 63, 0.12);
+  --warn: #e0a030;
+  --warn-soft: rgba(224, 160, 48, 0.14);
+  --ok: #2fa36b;
+  --blue: #3b6fd4;
+  --sh: 0 1px 2px rgba(15, 27, 45, .06), 0 8px 24px rgba(15, 27, 45, .06);
+  --side-w: 256px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme=light]) {
+    --bg: #0c1522;
+    --card: #142235;
+    --ink: #e8eef6;
+    --mut: #8fa1b8;
+    --line: #243750;
+    --acc: #2dc4bb;
+    --acc-soft: rgba(45, 196, 187, 0.14);
+    --bad: #e66b57;
+    --bad-soft: rgba(230, 107, 87, 0.14);
+    --warn: #ebb248;
+    --warn-soft: rgba(235, 178, 72, 0.15);
+    --sh: 0 8px 24px rgba(0, 0, 0, .35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme=dark] {
+  --bg: #0c1522;
+  --card: #142235;
+  --ink: #e8eef6;
+  --mut: #8fa1b8;
+  --line: #243750;
+  --acc: #2dc4bb;
+  --acc-soft: rgba(45, 196, 187, 0.14);
+  --bad: #e66b57;
+  --bad-soft: rgba(230, 107, 87, 0.14);
+  --warn: #ebb248;
+  --warn-soft: rgba(235, 178, 72, 0.15);
+  --sh: 0 8px 24px rgba(0, 0, 0, .35);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 14.5px/1.5 Figtree, system-ui, -apple-system, sans-serif;
+  display: flex;
+  overflow: hidden;
+}
+h1, h2, h3, .big {
+  font-family: 'Bricolage Grotesque', Figtree, sans-serif;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+
+/* Sidebar */
+.sidebar {
+  width: var(--side-w);
+  flex: none;
+  background: var(--card);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  z-index: 30;
+  transition: transform .28s cubic-bezier(.2, .8, .2, 1), width .25s ease;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 16px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--acc);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font: 800 15px 'Bricolage Grotesque', sans-serif;
+  flex: none;
+  overflow: hidden;
+}
+.brand-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.brand-txt strong { display: block; font: 700 16px 'Bricolage Grotesque', sans-serif; line-height: 1.15; }
+.brand-txt span { font-size: 11.5px; color: var(--mut); display: block; margin-top: 2px; }
+
+.nav-wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.nav-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mut);
+  padding: 0 10px 6px;
+}
+.nav-list { display: flex; flex-direction: column; gap: 4px; }
+.nav-btn {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 10px 12px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-align: left;
+  font-weight: 500;
+  transition: background .18s, color .18s, transform .15s;
+}
+.nav-btn:hover { background: var(--bg); }
+.nav-btn.on {
+  background: var(--acc);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(11, 122, 117, 0.24);
+}
+.nav-btn svg { width: 18px; height: 18px; flex: none; opacity: 0.85; }
+.nav-btn.on svg { opacity: 1; }
+.nav-btn .lbl { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: var(--bg);
+  color: var(--mut);
+  white-space: nowrap;
+}
+.nav-btn.on .pill {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+.quick-btn {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  padding: 8px 11px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: border-color .18s, background .18s;
+}
+.quick-btn:hover { border-color: var(--acc); background: var(--acc-soft); }
+.quick-btn svg { width: 15px; height: 15px; color: var(--acc); flex: none; }
+
+.side-foot {
+  padding: 12px 10px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Main workspace */
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.topbar {
+  height: 58px;
+  flex: none;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 18px;
+}
+.menu-btn {
+  display: none;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 9px;
+  padding: 7px 9px;
+  cursor: pointer;
+}
+.top-title { flex: 1; min-width: 0; }
+.top-title h1 { font-size: 19px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-title .sub { font-size: 12px; color: var(--mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.btn {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  padding: 7px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  transition: border-color .18s, background .18s;
+}
+.btn:hover { border-color: var(--acc); }
+.btn.pri { background: var(--acc); border-color: var(--acc); color: #fff; font-weight: 600; }
+.btn.pri:hover { filter: brightness(1.06); }
+
+/* Stage */
+.stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+.view-overview {
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px;
+}
+.overview-inner {
+  max-width: 1380px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.frame-wrap {
+  position: absolute;
+  inset: 0;
+  display: none;
+  background: var(--bg);
+}
+.frame-wrap.on { display: block; }
+.frame-wrap iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+/* Cards & Grids */
+.card {
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: var(--sh);
+  padding: 18px;
+}
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, var(--card) 0%, color-mix(in srgb, var(--acc) 9%, var(--card)) 100%);
+  border: 1px solid color-mix(in srgb, var(--acc) 22%, var(--line));
+}
+.hero h2 { font-size: 24px; font-weight: 800; }
+.hero p { margin: 4px 0 0; color: var(--mut); font-size: 13.5px; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+@media (max-width: 1120px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .kpis { grid-template-columns: 1fr; } }
+.kpi {
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform .2s, border-color .2s, box-shadow .2s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.kpi:hover {
+  transform: translateY(-2px);
+  border-color: var(--acc);
+}
+.kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--mut);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.kpi-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--acc-soft);
+  color: var(--acc);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.kpi-tag.warn { background: var(--warn-soft); color: var(--warn); }
+.kpi-tag.bad { background: var(--bad-soft); color: var(--bad); }
+.kpi .big { font-size: 28px; font-weight: 800; line-height: 1.15; margin-top: 2px; }
+.kpi-sub { font-size: 12.5px; color: var(--mut); }
+
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 14px;
+}
+.c6 { grid-column: span 6; }
+.c7 { grid-column: span 7; }
+.c5 { grid-column: span 5; }
+.c12 { grid-column: span 12; }
+@media (max-width: 1020px) { .c6, .c7, .c5 { grid-column: span 12; } }
+
+.card-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.card-hd h3 { font-size: 17px; font-weight: 700; }
+.card-hd .sub { font-size: 12.5px; color: var(--mut); }
+
+/* Bars & lists */
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 36%) 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin: 8px 0;
+  font-size: 13px;
+}
+.bar-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+.bar-track { height: 9px; border-radius: 9px; background: var(--bg); overflow: hidden; display: flex; }
+.bar-fill { height: 100%; background: var(--acc); border-radius: 9px; transition: width .5s ease; }
+.bar-fill.warn { background: var(--warn); border-radius: 0; }
+.bar-val { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 12.5px; white-space: nowrap; }
+
+.alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: var(--bg);
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.alert-item:last-child { margin-bottom: 0; }
+.alert-bar { width: 4px; align-self: stretch; border-radius: 4px; background: var(--acc); flex: none; }
+.alert-item.w .alert-bar { background: var(--warn); }
+.alert-item.b .alert-bar { background: var(--bad); }
+.alert-body { flex: 1; min-width: 0; }
+.alert-body strong { display: block; font-size: 13px; }
+.alert-body span { color: var(--mut); font-size: 12.5px; }
+
+.mini-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+@media (max-width: 520px) { .mini-stats { grid-template-columns: repeat(2, 1fr); } }
+.mini-box {
+  background: var(--bg);
+  border-radius: 11px;
+  padding: 10px 12px;
+}
+.mini-box span { display: block; font-size: 11.5px; color: var(--mut); }
+.mini-box b { font: 700 18px 'Bricolage Grotesque', sans-serif; }
+
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  text-align: left;
+  padding: 7px 8px;
+  border-bottom: 2px solid var(--line);
+  color: var(--mut);
+  font-weight: 600;
+  white-space: nowrap;
+}
+td {
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--bg);
+}
+.badge.ok { background: var(--acc-soft); color: var(--acc); }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.badge.bad { background: var(--bad-soft); color: var(--bad); }
+
+/* Mobile sidebar overlay */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 20, .45);
+  z-index: 25;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s;
+}
+.scrim.on { opacity: 1; pointer-events: auto; }
+@media (max-width: 880px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-105%);
+  }
+  .sidebar.open { transform: none; }
+  .menu-btn { display: inline-flex; align-items: center; }
+}
+
+/* Modal */
+.modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 20, .52);
+  z-index: 50;
+  display: none;
+  place-items: center;
+  padding: 16px;
+}
+.modal-bg.on { display: grid; }
+.modal {
+  width: min(620px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.3);
+  padding: 22px;
+}
+.modal textarea {
+  width: 100%;
+  min-height: 120px;
+  margin: 10px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  padding: 10px;
+  font: 12px/1.4 ui-monospace, monospace;
+}
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--bg);
+  padding: 10px 18px;
+  border-radius: 11px;
+  font-size: 13.5px;
+  font-weight: 500;
+  display: none;
+  z-index: 60;
+  box-shadow: var(--sh);
+}
+</style>
+</head>
+<body>
+
+<div class="scrim" id="scrim"></div>
+
+<aside class="sidebar" id="sidebar" aria-label="Portal navigation">
+  <div class="brand">
+    <div class="brand-logo" id="brandLogo">
+      <img src="https://media.licdn.com/dms/image/v2/D4D0BAQGVfEmQERxvTA/company-logo_200_200/B4DZuu7lvAH4AI-/0/1768166415915/internationalfurniturelimited_logo?e=2147483647&v=beta&t=4vq1pG52h-WG7i_ZB5uNfL0x5AdJYhLXHNiuYxD3jD4" alt="IFL" onerror="this.remove();document.getElementById('brandLogo').textContent='IFL'">
+    </div>
+    <div class="brand-txt">
+      <strong>IFL Portal</strong>
+      <span>International Furniture Pvt. Ltd.</span>
+    </div>
+  </div>
+
+  <div class="nav-wrap">
+    <div>
+      <div class="nav-lbl">Modules</div>
+      <div class="nav-list" id="navList">
+        <button class="nav-btn on" data-view="overview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          <span class="lbl">Executive Overview</span>
+        </button>
+        <button class="nav-btn" data-view="attendance">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="lbl">Attendance</span>
+          <span class="pill" id="pill-att">–</span>
+        </button>
+        <button class="nav-btn" data-view="inventory">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+          <span class="lbl">Inventory</span>
+          <span class="pill" id="pill-inv">–</span>
+        </button>
+        <button class="nav-btn" data-view="distribution">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+          <span class="lbl">OD + Loop Stock</span>
+          <span class="pill" id="pill-dist">–</span>
+        </button>
+        <button class="nav-btn" data-view="gatepass">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15l2 2 4-4"/></svg>
+          <span class="lbl">Gate Pass</span>
+          <span class="pill" id="pill-gp">Ready</span>
+        </button>
+      </div>
+    </div>
+
+    <div>
+      <div class="nav-lbl">Quick Actions</div>
+      <div class="nav-list">
+        <button class="quick-btn" data-qa="gp-out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          <span>New Outward Gate Pass</span>
+        </button>
+        <button class="quick-btn" data-qa="gp-in">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          <span>New Inward Gate Pass</span>
+        </button>
+        <button class="quick-btn" data-qa="dist-deliv">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <span>Log Branch Delivery</span>
+        </button>
+        <button class="quick-btn" data-qa="att-import">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>Import Attendance Excel</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="side-foot">
+    <button class="quick-btn" id="openBackup">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      <span>Unified Backup &amp; Restore</span>
+    </button>
+    <button class="quick-btn" id="themeBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      <span id="themeLbl">Toggle Light / Dark</span>
+    </button>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="top-title">
+      <h1 id="topTitle">Executive Overview</h1>
+      <div class="sub" id="topSub">International Furniture Private Limited · Unified Operations Portal</div>
+    </div>
+    <div class="top-actions">
+      <button class="btn" id="refreshBtn" title="Refresh overview metrics">Refresh</button>
+      <a class="btn" id="popoutBtn" href="#" target="_blank" rel="noopener" style="display:none">Open in New Tab ↗</a>
+    </div>
+  </header>
+
+  <main class="stage">
+    <section class="view-overview" id="view-overview">
+      <div class="overview-inner">
+
+        <div class="card hero">
+          <div>
+            <h2>IFL Operations Command Center</h2>
+            <p id="heroDate">Live cross-module overview across Workforce, Inventory, OD + Loop Distribution, and Gate Passes.</p>
+          </div>
+          <div class="hero-actions">
+            <button class="btn pri" data-qa="gp-out">+ Issue Gate Pass</button>
+            <button class="btn" data-view-jump="distribution">Branch Stock &amp; Deliveries</button>
+            <button class="btn" data-view-jump="inventory">Inventory Valuation</button>
+            <button class="btn" data-view-jump="attendance">Attendance Matrix</button>
+          </div>
+        </div>
+
+        <div class="kpis" id="ov-kpis"></div>
+
+        <div class="grid2">
+          <div class="card c7">
+            <div class="card-hd">
+              <div>
+                <h3>OD + Loop Branch Fulfilment</h3>
+                <div class="sub" id="dist-sub">Ordered vs delivered across branches</div>
+              </div>
+              <button class="btn" data-view-jump="distribution">Open Module →</button>
+            </div>
+            <div id="dist-bars"></div>
+          </div>
+
+          <div class="card c5">
+            <div class="card-hd">
+              <div>
+                <h3>Action Center &amp; Alerts</h3>
+                <div class="sub">Items needing management attention</div>
+              </div>
+            </div>
+            <div id="ov-alerts"></div>
+          </div>
+
+          <div class="card c6">
+            <div class="card-hd">
+              <div>
+                <h3>Inventory Breakdown</h3>
+                <div class="sub" id="inv-sub">Stock valuation by sheet &amp; top projects</div>
+              </div>
+              <button class="btn" data-view-jump="inventory">Open Module →</button>
+            </div>
+            <div class="mini-stats" id="inv-sheets"></div>
+            <div style="font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Top Projects by Master Value</div>
+            <div id="inv-bars"></div>
+          </div>
+
+          <div class="card c6">
+            <div class="card-hd">
+              <div>
+                <h3>Workforce &amp; Attendance Pulse</h3>
+                <div class="sub" id="att-sub">Latest monthly factory attendance</div>
+              </div>
+              <button class="btn" data-view-jump="attendance">Open Module →</button>
+            </div>
+            <div class="mini-stats" id="att-mini"></div>
+            <div style="font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Top Overtime &amp; Attendance Watchlist</div>
+            <div class="tbl-wrap"><table id="att-tbl"></table></div>
+          </div>
+
+          <div class="card c12">
+            <div class="card-hd">
+              <div>
+                <h3>Recent Gate Passes &amp; Dispatch Log</h3>
+                <div class="sub" id="gp-sub">Passes generated in this browser &amp; offline Google Sheet sync queue</div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn" data-qa="gp-in">Inward</button>
+                <button class="btn pri" data-qa="gp-out">Outward</button>
+                <button class="btn" data-qa="gp-ret">Return</button>
+              </div>
+            </div>
+            <div class="tbl-wrap"><table id="gp-tbl"></table></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <div class="frame-wrap" id="wrap-attendance"><iframe id="frame-attendance" title="Attendance Intelligence"></iframe></div>
+    <div class="frame-wrap" id="wrap-inventory"><iframe id="frame-inventory" title="Inventory Intelligence"></iframe></div>
+    <div class="frame-wrap" id="wrap-distribution"><iframe id="frame-distribution" title="Branch Stock Distribution"></iframe></div>
+    <div class="frame-wrap" id="wrap-gatepass"><iframe id="frame-gatepass" title="IFL Gate Pass Generator"></iframe></div>
+  </main>
+</div>
+
+<!-- Unified Backup Modal -->
+<div class="modal-bg" id="backupModal" role="dialog" aria-modal="true" aria-labelledby="bkTitle">
+  <div class="modal">
+    <div class="card-hd">
+      <div>
+        <h3 id="bkTitle">Unified Browser Data Backup &amp; Restore</h3>
+        <div class="sub">Includes Attendance months, OD+Loop deliveries &amp; stock edits, and Gate Pass history/queue.</div>
+      </div>
+      <button class="btn" id="closeBackup">Close</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <button class="btn pri" id="dlBackup">Download JSON Backup</button>
+      <button class="btn" id="copyBackup">Copy JSON</button>
+      <label class="btn" style="cursor:pointer">Import Backup File<input type="file" id="upBackup" accept=".json" hidden></label>
+      <button class="btn" id="applyBackup">Restore from Box Below</button>
+    </div>
+    <textarea id="bkBox" placeholder="Click Download or Copy to inspect your current backup JSON, or paste a saved backup JSON here and click Restore."></textarea>
+    <div class="sub" id="bkMeta"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
+
+const MODULES = {
+  overview: { title: "Executive Overview", sub: "International Furniture Private Limited · Unified Operations Portal" },
+  attendance: { title: "Attendance Intelligence", sub: "Factory attendance, overtime, daily punch matrix & Excel import", src: "modules/attendance.html" },
+  inventory: { title: "Inventory Intelligence", sub: "Finished Goods, Imported FG, Raw Material, Factory Eq. & ABC analysis", src: "modules/inventory.html" },
+  distribution: { title: "OD + Loop Branch Distribution", sub: "Branch orders vs delivered, factory stock position & delivery schedule", src: "modules/distribution.html" },
+  gatepass: { title: "IFL Gate Pass Generator", sub: "Inward / Outward / Return gate passes with A4 two-copy PDF & Sheet sync", src: "modules/gatepass.html" }
+};
+
+const STORAGE_KEYS = [
+  "factory_att_v1",
+  "branchStock.v3",
+  "branchStock.log.v2",
+  "branchStock.have.v2",
+  "gp_prod",
+  "gp_pending",
+  "gp_n",
+  "gp_history"
+];
+
+let currentView = "overview";
+const loadedFrames = new Set();
+const liveStats = { attendance: null, inventory: null, distribution: null, gatepass: null };
+
+function toast(msg) {
+  const el = $("#toast");
+  el.textContent = msg;
+  el.style.display = "block";
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => { el.style.display = "none"; }, 3800);
+}
+
+function lsGet(k, fallback) {
+  try {
+    const raw = localStorage.getItem(k);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch { return fallback; }
+}
+
+function fmtCrore(v) {
+  const a = Math.abs(v || 0);
+  const s = v < 0 ? "-" : "";
+  if (a >= 1e7) return s + "Rs " + (a / 1e7).toFixed(2) + " Cr";
+  if (a >= 1e5) return s + "Rs " + (a / 1e5).toFixed(2) + " Lac";
+  if (a >= 1e3) return s + "Rs " + (a / 1e3).toFixed(1) + " K";
+  return s + "Rs " + Math.round(a).toLocaleString();
+}
+function fmtNum(v) {
+  return Math.round(v || 0).toLocaleString();
+}
+
+/* ---------- Theme Sync ---------- */
+function getTheme() {
+  const saved = localStorage.getItem("ifl_portal_theme");
+  if (saved === "light" || saved === "dark") return saved;
+  return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  localStorage.setItem("ifl_portal_theme", theme);
+  $("#themeLbl").textContent = theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode";
+  for (const k of loadedFrames) {
+    const fr = $("#frame-" + k);
+    try { fr.contentWindow.postMessage({ type: "ifl-theme", theme }, "*"); } catch {}
+  }
+}
+$("#themeBtn").onclick = () => applyTheme(getTheme() === "dark" ? "light" : "dark");
+
+/* ---------- Compute Baseline / LocalStorage Metrics ---------- */
+function computeAttendance() {
+  if (liveStats.attendance) return liveStats.attendance;
+  const db = lsGet("factory_att_v1", null) || (window.IFL_SEEDS && window.IFL_SEEDS.attendance);
+  if (!db || !db.months) return null;
+  const ks = Object.keys(db.months).sort();
+  if (!ks.length) return null;
+  const latest = ks[ks.length - 1];
+  const mo = db.months[latest];
+  const th = (mo.set?.off || 1080) + (mo.set?.grace || 0);
+  const emps = [];
+  let P = 0, M = 0, A = 0, L = 0, ot = 0, work = 0, hs = 0, hn = 0, issues = 0;
+
+  for (const [nm, rec] of Object.entries(mo.recs || {})) {
+    let ep = 0, em = 0, ea = 0, eot = 0, ework = 0;
+    rec.forEach(c => {
+      const [k, i, o] = String(c).split(":");
+      if (k === "P") {
+        ep++; P++;
+        const a = i === "" || i == null ? null : +i;
+        const b = o === "" || o == null ? null : +o;
+        if (a == null || b == null) { em++; M++; issues++; }
+        if (b != null) eot += Math.max(0, b - th);
+        if (a != null && b != null) { let h = b - a; if (h < 0) h += 1440; hs += h; hn++; }
+      } else if (k === "A") { ea++; A++; }
+      else if (k === "L") { L++; }
+      else if (k === "N") { issues++; }
+    });
+    const sm = mo.sum?.[nm];
+    const lv = Math.min(sm ? sm.leave : 0, ea);
+    const el = lv;
+    const eabs = ea - lv;
+    L += lv; A -= lv;
+    const finalOt = sm && sm.ot != null ? sm.ot : eot / 60;
+    ot += finalOt;
+    ework = ep + eabs + el;
+    work += ework;
+    emps.push({ name: nm, id: mo.ids?.[nm], present: ep, absent: eabs, leave: el, ot: finalOt, pct: ework ? (ep / ework * 100) : 0 });
+  }
+  const dEnd = new Date(Date.parse(mo.start) + (mo.n - 1) * 864e5);
+  const monthLabel = dEnd.toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" });
+  const dStart = new Date(Date.parse(mo.start));
+  const fOpt = { day: "numeric", month: "short", timeZone: "UTC" };
+  const period = dStart.toLocaleDateString("en-GB", fOpt) + " – " + dEnd.toLocaleDateString("en-GB", fOpt);
+
+  return {
+    monthKey: latest,
+    monthLabel,
+    period,
+    monthsCount: ks.length,
+    employees: emps.length,
+    pct: work ? (P / work * 100) : 0,
+    present: P,
+    absent: A,
+    leave: L,
+    ot,
+    avgHrs: hn ? (hs / hn / 60) : 0,
+    issues,
+    incomplete: M,
+    highAbsence: emps.filter(e => e.absent >= 3),
+    topWatch: [...emps].sort((a, b) => b.ot - a.ot).slice(0, 6)
+  };
+}
+
+function computeInventory() {
+  if (liveStats.inventory) return liveStats.inventory;
+  return (window.IFL_SEEDS && window.IFL_SEEDS.inventory) || null;
+}
+
+function computeDistribution() {
+  if (liveStats.distribution) return liveStats.distribution;
+  const saved = lsGet("branchStock.v3", null);
+  const built = window.IFL_SEEDS && window.IFL_SEEDS.distribution;
+  const D = (saved && saved.D) ? saved.D : (built ? built.D : []);
+  const BR = (saved && saved.BR) ? saved.BR : (built ? built.BR : []);
+  const snap = (built && built.SNAP) || "2026-11-19";
+  const LOG = lsGet("branchStock.log.v2", []);
+  const MAN = lsGet("branchStock.have.v2", {});
+  const nk = n => String(n).toLowerCase().replace(/\s+/g, " ").trim();
+  const today = new Date().toISOString().slice(0, 10);
+
+  let totalOrdered = 0, totalDelivered = 0, totalPending = 0, pendingVal = 0;
+  let shortCount = 0, shortUnits = 0, shortVal = 0;
+  const shortList = [];
+  const brAgg = BR.map(name => ({ name, ordered: 0, delivered: 0, pending: 0, pendingVal: 0 }));
+
+  for (const r of D) {
+    const k = nk(r.n);
+    let h = (k in MAN) ? MAN[k] : r.h;
+    const od = BR.map((_, i) => typeof r.q[i] === "number" ? r.q[i] : 0);
+    const dv = BR.map((_, i) => (r.dv && r.dv[i]) || 0);
+    let net = 0;
+    for (const e of LOG) {
+      if (e.k !== k || e.d > today || e.d <= snap) continue;
+      if (e.t === "in") net += e.q;
+      else {
+        net -= e.q;
+        const j = BR.findIndex(b => nk(b) === nk(e.b));
+        if (j >= 0) dv[j] += e.q;
+      }
+    }
+    if (h != null) h += net;
+    let rowRes = 0;
+    od.forEach((o, i) => {
+      const deliv = Math.min(dv[i], o);
+      const pend = Math.max(0, o - dv[i]);
+      totalOrdered += o;
+      totalDelivered += deliv;
+      totalPending += pend;
+      pendingVal += pend * (r.p || 0);
+      rowRes += pend;
+      brAgg[i].ordered += o;
+      brAgg[i].delivered += deliv;
+      brAgg[i].pending += pend;
+      brAgg[i].pendingVal += pend * (r.p || 0);
+    });
+    if (h != null && h < rowRes) {
+      const need = rowRes - h;
+      shortCount++;
+      shortUnits += need;
+      shortVal += need * (r.p || 0);
+      shortList.push({ name: r.n, need, onHand: h });
+    }
+  }
+  const branches = brAgg.map(b => ({ ...b, pct: b.ordered ? (b.delivered / b.ordered * 100) : 0 }));
+  return {
+    snap,
+    asof: today,
+    products: D.length,
+    branchesCount: BR.length,
+    totalOrdered,
+    totalDelivered,
+    totalPending,
+    pendingVal,
+    shortCount,
+    shortUnits,
+    shortVal,
+    shortList: shortList.sort((a, b) => b.need - a.need).slice(0, 5),
+    scheduledAfterToday: LOG.filter(e => e.d > today).length,
+    logCount: LOG.length,
+    branches
+  };
+}
+
+function computeGatePass() {
+  if (liveStats.gatepass) return liveStats.gatepass;
+  const pending = lsGet("gp_pending", []);
+  const hist = lsGet("gp_history", []);
+  const prods = lsGet("gp_prod", null);
+  const seq = +localStorage.getItem("gp_n") || 0;
+  return {
+    pendingCount: pending.length,
+    localSeq: seq,
+    productCount: prods ? prods.length : 323,
+    recent: hist.slice(-8).reverse()
+  };
+}
+
+/* ---------- Render Overview ---------- */
+function renderOverview() {
+  const att = computeAttendance();
+  const inv = computeInventory();
+  const dist = computeDistribution();
+  const gp = computeGatePass();
+
+  const nowStr = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  $("#heroDate").textContent = `${nowStr} · Live metrics across Attendance, Inventory, OD + Loop Distribution, and Gate Passes.`;
+
+  // Sidebar pills
+  if (att) $("#pill-att").textContent = att.pct.toFixed(0) + "%";
+  if (inv) $("#pill-inv").textContent = (inv.totalVal / 1e7).toFixed(1) + " Cr";
+  if (dist) $("#pill-dist").textContent = dist.shortCount ? `${dist.shortCount} short` : fmtNum(dist.totalPending);
+  if (gp) $("#pill-gp").textContent = gp.pendingCount ? `${gp.pendingCount} queued` : "Ready";
+
+  // Top 4 KPIs
+  const delivPct = dist && dist.totalOrdered ? (dist.totalDelivered / dist.totalOrdered * 100) : 0;
+  $("#ov-kpis").innerHTML = `
+    <div class="card kpi" data-view-jump="attendance">
+      <div class="kpi-top"><span>WORKFORCE ATTENDANCE</span><span class="kpi-tag">${att ? esc(att.monthLabel) : "–"}</span></div>
+      <div class="big">${att ? att.pct.toFixed(1) + "%" : "–"}</div>
+      <div class="kpi-sub">${att ? `${att.employees} employees · ${att.ot.toFixed(1)} h OT · ${att.absent} absent` : "No attendance loaded"}</div>
+    </div>
+    <div class="card kpi" data-view-jump="inventory">
+      <div class="kpi-top"><span>MASTER INVENTORY VALUE</span><span class="kpi-tag">${inv ? fmtNum(inv.totalItems) + " SKUs" : "–"}</span></div>
+      <div class="big">${inv ? fmtCrore(inv.totalVal) : "–"}</div>
+      <div class="kpi-sub">${inv ? `${inv.catCount} categories · ${inv.sheets[1].items} imported FG · ${inv.sheets[2].items} local FG` : "No inventory loaded"}</div>
+    </div>
+    <div class="card kpi" data-view-jump="distribution">
+      <div class="kpi-top"><span>OD + LOOP PENDING ORDERS</span><span class="kpi-tag ${dist && dist.shortCount ? "bad" : ""}">${dist ? (dist.shortCount ? dist.shortCount + " SKUs short" : "Covered") : "–"}</span></div>
+      <div class="big">${dist ? fmtCrore(dist.pendingVal) : "–"}</div>
+      <div class="kpi-sub">${dist ? `${fmtNum(dist.totalPending)} units pending · ${delivPct.toFixed(0)}% delivered across ${dist.branchesCount} branches` : "–"}</div>
+    </div>
+    <div class="card kpi" data-view-jump="gatepass">
+      <div class="kpi-top"><span>GATE PASS OPERATIONS</span><span class="kpi-tag ${gp.pendingCount ? "warn" : ""}">${gp.pendingCount ? gp.pendingCount + " offline" : "Online Sync"}</span></div>
+      <div class="big">${gp.recent.length ? gp.recent.length + " recent" : "Ready"}</div>
+      <div class="kpi-sub">${gp.productCount} master products · ${gp.pendingCount} awaiting Sheet sync</div>
+    </div>
+  `;
+
+  // OD + Loop Branch Fulfilment Bars
+  if (dist) {
+    $("#dist-sub").textContent = `Snapshot ${dist.snap} · ${fmtNum(dist.totalDelivered)} delivered / ${fmtNum(dist.totalOrdered)} ordered (${delivPct.toFixed(0)}%)`;
+    const sortedBr = [...dist.branches].filter(b => b.ordered > 0).sort((a, b) => b.ordered - a.ordered);
+    const maxOrd = Math.max(...sortedBr.map(b => b.ordered), 1);
+    $("#dist-bars").innerHTML = sortedBr.map(b => {
+      const delW = (b.delivered / maxOrd * 100).toFixed(1);
+      const penW = (b.pending / maxOrd * 100).toFixed(1);
+      return `<div class="bar-row">
+        <span class="bar-name" title="${esc(b.name)}">${esc(b.name)}</span>
+        <span class="bar-track" title="Delivered: ${b.delivered}, Pending: ${b.pending}">
+          <span class="bar-fill" style="width:${delW}%"></span>
+          <span class="bar-fill warn" style="width:${penW}%"></span>
+        </span>
+        <span class="bar-val">${b.delivered}/${b.ordered} <span style="color:var(--mut);font-weight:400">(${b.pct.toFixed(0)}%)</span></span>
+      </div>`;
+    }).join("") + `<div style="margin-top:10px;display:flex;gap:14px;font-size:12px;color:var(--mut)"><span><b style="color:var(--acc)">■</b> Delivered</span><span><b style="color:var(--warn)">■</b> Pending to deliver</span></div>`;
+  }
+
+  // Alerts
+  const alerts = [];
+  if (dist && dist.shortCount > 0) {
+    alerts.push({ cls: "b", title: `${dist.shortCount} OD/Loop products short of factory stock`, text: `Need ${fmtNum(dist.shortUnits)} units (${fmtCrore(dist.shortVal)}): ` + dist.shortList.slice(0, 3).map(x => `${esc(x.name)} (-${x.need})`).join(", ") });
+  }
+  if (att && att.highAbsence && att.highAbsence.length) {
+    alerts.push({ cls: "w", title: `${att.highAbsence.length} employee(s) with 3+ absences (${esc(att.monthLabel)})`, text: att.highAbsence.map(e => `${esc(e.name)} (${e.absent} absent)`).join(", ") });
+  }
+  if (att && att.incomplete) {
+    alerts.push({ cls: "w", title: `${att.incomplete} incomplete punch record(s) in ${esc(att.monthLabel)}`, text: `Missing Time In or Time Out; overtime/hours skipped until fixed.` });
+  }
+  if (inv && inv.negCount) {
+    alerts.push({ cls: "b", title: `${inv.negCount} negative-value item(s) in Master Inventory`, text: `Review stock adjustments or negative quantities in Inventory Intelligence.` });
+  }
+  if (gp && gp.pendingCount) {
+    alerts.push({ cls: "w", title: `${gp.pendingCount} Gate Pass(es) waiting in offline queue`, text: `Open Gate Pass module while online to flush pending passes to Google Sheets.` });
+  }
+  if (dist && dist.scheduledAfterToday) {
+    alerts.push({ cls: "", title: `${dist.scheduledAfterToday} scheduled delivery log(s) upcoming`, text: `Future dispatches or factory receipts scheduled after today.` });
+  }
+  if (!alerts.length) {
+    alerts.push({ cls: "", title: "All systems nominal", text: "No critical discrepancies or shortages detected across modules." });
+  }
+  $("#ov-alerts").innerHTML = alerts.map(a => `
+    <div class="alert-item ${a.cls}">
+      <div class="alert-bar"></div>
+      <div class="alert-body"><strong>${a.title}</strong><span>${a.text}</span></div>
+    </div>
+  `).join("");
+
+  // Inventory Card
+  if (inv) {
+    const subSheets = inv.sheets.filter(s => s.key !== "all");
+    $("#inv-sheets").innerHTML = subSheets.slice(0, 3).map(s => `
+      <div class="mini-box"><span>${esc(s.name)}</span><b>${fmtCrore(s.val)}</b><span style="margin-top:2px">${s.items} items</span></div>
+    `).join("");
+    const maxProj = Math.max(...inv.topProjects.map(p => p.val), 1);
+    $("#inv-bars").innerHTML = inv.topProjects.slice(0, 6).map(p => `
+      <div class="bar-row">
+        <span class="bar-name">${esc(p.name)}</span>
+        <span class="bar-track"><span class="bar-fill" style="width:${Math.max(2, p.val / maxProj * 100).toFixed(1)}%"></span></span>
+        <span class="bar-val">${fmtCrore(p.val)}</span>
+      </div>
+    `).join("");
+  }
+
+  // Attendance Card
+  if (att) {
+    $("#att-sub").textContent = `${att.monthLabel} (${att.period}) · ${att.monthsCount} months stored`;
+    $("#att-mini").innerHTML = `
+      <div class="mini-box"><span>Attendance Rate</span><b>${att.pct.toFixed(1)}%</b></div>
+      <div class="mini-box"><span>Overtime Logged</span><b>${att.ot.toFixed(1)} h</b></div>
+      <div class="mini-box"><span>Avg Hours / Day</span><b>${att.avgHrs.toFixed(1)} h</b></div>
+    `;
+    const rows = att.topWatch || att.highAbsence || [];
+    $("#att-tbl").innerHTML = `<tr><th>Employee</th><th class="num">Present</th><th class="num">Absent</th><th class="num">OT hrs</th><th class="num">Rate</th></tr>` +
+      (rows.length ? rows.map(r => `<tr>
+        <td><b>${esc(r.name)}</b></td>
+        <td class="num">${r.present ?? "–"}</td>
+        <td class="num">${r.absent > 0 ? `<span class="badge bad">${r.absent}</span>` : "0"}</td>
+        <td class="num">${r.ot != null ? r.ot.toFixed(1) : "–"}</td>
+        <td class="num"><span class="badge ${r.pct >= 90 ? "ok" : r.pct >= 75 ? "warn" : "bad"}">${r.pct.toFixed(1)}%</span></td>
+      </tr>`).join("") : `<tr><td colspan="5" class="sub">Open Attendance module to view detailed employee matrix.</td></tr>`);
+  }
+
+  // Gate Pass Card
+  const gpPending = lsGet("gp_pending", []);
+  const rowsGp = gp.recent && gp.recent.length ? gp.recent : gpPending.slice(-6).reverse().map(r => ({
+    no: r.no, date: r.date, type: r.type, to: r.to, items: (r.items || []).length, authorisedBy: r.authorisedBy, queued: true
+  }));
+  $("#gp-sub").textContent = `${gp.productCount} catalog items · ${gp.pendingCount} queued offline · ${gp.recent.length} logged in this browser`;
+  $("#gp-tbl").innerHTML = rowsGp.length
+    ? `<tr><th>Pass No.</th><th>Date</th><th>Type</th><th>Destination</th><th class="num">Items</th><th>Authorised By</th><th>Sync</th></tr>` +
+      rowsGp.map(r => `<tr>
+        <td><b>${esc(r.no || "–")}</b></td>
+        <td>${esc(r.date || "–")}</td>
+        <td><span class="badge">${esc(r.type || "Outward")}</span></td>
+        <td>${esc(r.to || "–")}</td>
+        <td class="num">${r.items ?? "–"}</td>
+        <td>${esc(r.authorisedBy || "–")}</td>
+        <td>${String(r.no || "").startsWith("L-") ? `<span class="badge warn">Local / Offline</span>` : `<span class="badge ok">Synced</span>`}</td>
+      </tr>`).join("")
+    : `<tr><td colspan="7" style="color:var(--mut);padding:12px 8px">No gate passes generated from this browser yet. Click <b>Outward</b>, <b>Inward</b>, or <b>Return</b> above to create a PDF gate pass.</td></tr>`;
+}
+
+/* ---------- Navigation & Iframe Management ---------- */
+function switchView(view, actionMsg) {
+  if (!MODULES[view]) return;
+  currentView = view;
+
+  $$("#navList .nav-btn").forEach(b => b.classList.toggle("on", b.dataset.view === view));
+  $("#topTitle").textContent = MODULES[view].title;
+  $("#topSub").textContent = MODULES[view].sub;
+
+  const isOv = view === "overview";
+  $("#view-overview").style.display = isOv ? "block" : "none";
+  $("#refreshBtn").style.display = isOv ? "inline-flex" : "none";
+  $("#popoutBtn").style.display = isOv ? "none" : "inline-flex";
+  if (!isOv) $("#popoutBtn").href = MODULES[view].src;
+
+  $$(".frame-wrap").forEach(w => w.classList.remove("on"));
+  if (!isOv) {
+    const wrap = $("#wrap-" + view);
+    const frame = $("#frame-" + view);
+    wrap.classList.add("on");
+    if (!loadedFrames.has(view)) {
+      loadedFrames.add(view);
+      frame.onload = () => {
+        try {
+          frame.contentWindow.postMessage({ type: "ifl-theme", theme: getTheme() }, "*");
+          if (actionMsg) frame.contentWindow.postMessage(actionMsg, "*");
+        } catch {}
+      };
+      frame.src = MODULES[view].src;
+    } else if (actionMsg) {
+      try { frame.contentWindow.postMessage(actionMsg, "*"); } catch {}
+    }
+  } else {
+    renderOverview();
+  }
+
+  // Close mobile sidebar
+  $("#sidebar").classList.remove("open");
+  $("#scrim").classList.remove("on");
+}
+
+document.addEventListener("click", e => {
+  const nav = e.target.closest("[data-view]");
+  if (nav) { switchView(nav.dataset.view); return; }
+  const jump = e.target.closest("[data-view-jump]");
+  if (jump) { switchView(jump.dataset.viewJump); return; }
+  const qa = e.target.closest("[data-qa]");
+  if (qa) {
+    const act = qa.dataset.qa;
+    if (act === "gp-out") switchView("gatepass", { type: "ifl-action", passType: "Outward" });
+    else if (act === "gp-in") switchView("gatepass", { type: "ifl-action", passType: "Inward" });
+    else if (act === "gp-ret") switchView("gatepass", { type: "ifl-action", passType: "Return" });
+    else if (act === "dist-deliv") switchView("distribution", { type: "ifl-action", scrollTo: "dv" });
+    else if (act === "att-import") switchView("attendance", { type: "ifl-action", tab: "dat" });
+  }
+});
+
+$("#menuBtn").onclick = () => { $("#sidebar").classList.add("open"); $("#scrim").classList.add("on"); };
+$("#scrim").onclick = () => { $("#sidebar").classList.remove("open"); $("#scrim").classList.remove("on"); };
+$("#refreshBtn").onclick = () => {
+  for (const k of loadedFrames) {
+    try { $("#frame-" + k).contentWindow.postMessage({ type: "ifl-ping" }, "*"); } catch {}
+  }
+  renderOverview();
+  toast("Overview metrics refreshed.");
+};
+
+/* ---------- Cross-Iframe PostMessage & Storage Sync ---------- */
+window.addEventListener("message", e => {
+  if (!e.data || e.data.type !== "ifl-stats") return;
+  if (e.data.module && e.data.stats) {
+    liveStats[e.data.module] = e.data.stats;
+    if (currentView === "overview") renderOverview();
+    else {
+      // Update sidebar pills immediately
+      const st = e.data.stats;
+      if (e.data.module === "attendance" && st.pct != null) $("#pill-att").textContent = st.pct.toFixed(0) + "%";
+      if (e.data.module === "distribution") $("#pill-dist").textContent = st.shortCount ? `${st.shortCount} short` : fmtNum(st.totalPending);
+      if (e.data.module === "gatepass") $("#pill-gp").textContent = st.pendingCount ? `${st.pendingCount} queued` : "Ready";
+    }
+  }
+});
+window.addEventListener("storage", () => {
+  if (currentView === "overview") renderOverview();
+});
+
+/* ---------- Unified Backup & Restore ---------- */
+function buildBackupPayload() {
+  const data = {};
+  let count = 0;
+  for (const k of STORAGE_KEYS) {
+    const v = localStorage.getItem(k);
+    if (v != null) { data[k] = v; count++; }
+  }
+  return { app: "IFL Management Portal", exportedAt: new Date().toISOString(), keysStored: count, data };
+}
+$("#openBackup").onclick = () => {
+  const payload = buildBackupPayload();
+  $("#bkBox").value = JSON.stringify(payload, null, 2);
+  $("#bkMeta").textContent = `${payload.keysStored} browser storage dataset(s) found.`;
+  $("#backupModal").classList.add("on");
+};
+$("#closeBackup").onclick = () => $("#backupModal").classList.remove("on");
+$("#backupModal").onclick = e => { if (e.target === $("#backupModal")) $("#backupModal").classList.remove("on"); };
+
+$("#dlBackup").onclick = () => {
+  const payload = buildBackupPayload();
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `IFL-Portal-Backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  toast("Backup JSON downloaded.");
+};
+$("#copyBackup").onclick = async () => {
+  try {
+    await navigator.clipboard.writeText($("#bkBox").value);
+    toast("Backup JSON copied to clipboard.");
+  } catch {
+    $("#bkBox").select();
+    toast("Selected backup text — press Ctrl+C to copy.");
+  }
+};
+function restoreFromJson(raw) {
+  try {
+    const parsed = JSON.parse(raw);
+    const data = parsed.data || parsed;
+    let restored = 0;
+    for (const k of STORAGE_KEYS) {
+      if (typeof data[k] === "string") {
+        localStorage.setItem(k, data[k]);
+        restored++;
+      }
+    }
+    if (!restored) throw new Error("No recognized IFL datasets found in JSON.");
+    // Reload any opened iframes so they pick up restored state
+    for (const k of loadedFrames) {
+      $("#frame-" + k).src = MODULES[k].src;
+    }
+    liveStats.attendance = null;
+    liveStats.distribution = null;
+    liveStats.gatepass = null;
+    renderOverview();
+    $("#backupModal").classList.remove("on");
+    toast(`Restored ${restored} dataset(s).`);
+  } catch (err) {
+    toast("Invalid backup file: " + err.message);
+  }
+}
+$("#applyBackup").onclick = () => restoreFromJson($("#bkBox").value);
+$("#upBackup").onchange = async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const txt = await f.text();
+  $("#bkBox").value = txt;
+  restoreFromJson(txt);
+  e.target.value = "";
+};
+
+/* ---------- Init ---------- */
+applyTheme(getTheme());
+renderOverview();
+</script>
+</body>
+</html>
